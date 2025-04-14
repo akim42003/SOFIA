@@ -1,0 +1,10 @@
+#.gitignore
+/.ropeproject
+
+/whisper
+
+/outputs
+
+/credentials.json
+
+/token.json
