@@ -2,15 +2,25 @@ from ollama import ChatResponse, chat
 import json
 import os
 import yaml
+import asyncio
 from sys_tools import save_file, read_file, execute_command
+from gmail_mcp import server
+from fastmcp import Client
+from fastmcp.client.transports import FastMCPTransport
 
-def load_config(config_file='config.yaml'):
+def load_config(config_file='tools.yaml'):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
     return config.get('messages', []), config.get('tools', [])
 
 # Load config from YAML file.
 messages, tools = load_config()
+
+def gmail_list_labels_tool() -> list[str]:
+    async def _call():
+        async with Client(FastMCPTransport(server)) as client:
+            return await client.call_tool("gmail_list_labels", {})
+    return asyncio.run(_call())
 
 class ChatBrain:
     def __init__(self, chat_func):
@@ -19,6 +29,7 @@ class ChatBrain:
             "save_file": save_file,
             "read_file": read_file,
             "execute_command": execute_command,
+            "gmail_list_labels": gmail_list_labels_tool
         }
 
     def execute_tool_calls(self, response):
@@ -72,6 +83,7 @@ class ChatBrain:
                 messages.append({"role": "assistant", "content": final_response.message.content})
                 return final_response.message.content, user_input
         messages.append({"role": "assistant", "content": response.message.content})
+
         return response.message.content, user_input
 
     def initialize_chat(self, messages):

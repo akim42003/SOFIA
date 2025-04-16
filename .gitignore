@@ -1,10 +1,10 @@
 #.gitignore
-/.ropeproject
+.ropeproject
 
 /whisper
 
 /outputs
 
-/credentials.json
+credentials.json
 
-/token.json
+token.json

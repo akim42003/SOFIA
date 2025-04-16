@@ -72,3 +72,11 @@ tools:
             description: "The shell command to execute (e.g., 'ls -la', 'mv file1 file2')."
         required:
           - command
+
+  - type: function
+    function:
+      name: gmail_list_labels
+      description: "Return a list of Gmail labels."
+      parameters:
+        type: object
+        properties: {}
