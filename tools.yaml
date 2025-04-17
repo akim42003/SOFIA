@@ -75,8 +75,39 @@ tools:
 
   - type: function
     function:
-      name: gmail_list_labels
-      description: "Return a list of Gmail labels."
+      name: "gmail_search_emails"
+      description: "Search inbox by sender and/or subject and return the message verbatim unless a summary or snippet is requested."
       parameters:
         type: object
-        properties: {}
+        properties:
+          sender:
+            type: string
+          subject:
+            type: string
+          max_results:
+            type: integer
+        required: []
+
+  - type: function
+    function:
+      name: "gmail_fetch_emails"
+      description: >
+        Fetch messages from your Gmail inbox.  With `all_inbox=true` you get
+        every message; with `all_inbox=false` (the default) you get only
+        Primary‑tab (important) messages by excluding other categories.
+        You can also set `unread_only=true` to limit to unread mail.
+      parameters:
+        type: object
+        properties:
+          max_results:
+            type: integer
+            description: "How many messages to retrieve."
+          unread_only:
+            type: boolean
+            description: "If true, only return unread messages."
+          all_inbox:
+            type: boolean
+            description: >
+              If true, include all messages in INBOX;
+              if false, only Primary tab (default).
+        required: []

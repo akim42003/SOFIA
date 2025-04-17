@@ -3,6 +3,7 @@ import json
 import os
 import yaml
 import asyncio
+from typing import List, Dict, Optional
 from sys_tools import save_file, read_file, execute_command
 from gmail_mcp import server
 from fastmcp import Client
@@ -16,11 +17,43 @@ def load_config(config_file='tools.yaml'):
 # Load config from YAML file.
 messages, tools = load_config()
 
-def gmail_list_labels_tool() -> list[str]:
+
+def gmail_search_emails(
+    sender: Optional[str] = None,
+    subject: Optional[str] = None,
+    max_results: int = 10
+) -> List[Dict[str, str]]:
+
     async def _call():
         async with Client(FastMCPTransport(server)) as client:
-            return await client.call_tool("gmail_list_labels", {})
+            return await client.call_tool(
+                "gmail_search_emails",
+                {
+                    "sender": sender,
+                    "subject": subject,
+                    "max_results": max_results
+                }
+            )
+    # run the coroutine and return its result
     return asyncio.run(_call())
+
+def fetch_gmail(
+    max_results: int = 5,
+    all_inbox: bool = False,
+    unread_only: bool = False
+) -> List[Dict[str, str]]:
+    async def _call():
+        async with Client(FastMCPTransport(server)) as client:
+            return await client.call_tool(
+                "gmail_fetch_emails",
+                {
+                    "max_results":    max_results,
+                    "all_inbox":    all_inbox,
+                    "unread_only":    unread_only
+                }
+            )
+    return asyncio.run(_call())
+
 
 class ChatBrain:
     def __init__(self, chat_func):
@@ -29,7 +62,8 @@ class ChatBrain:
             "save_file": save_file,
             "read_file": read_file,
             "execute_command": execute_command,
-            "gmail_list_labels": gmail_list_labels_tool
+            "gmail_search_emails": gmail_search_emails,
+            "gmail_fetch_emails": fetch_gmail
         }
 
     def execute_tool_calls(self, response):
@@ -48,8 +82,8 @@ class ChatBrain:
                 try:
                     output = func(**args)
                     print(f"Calling function: {tool_name}")
-                    print("Arguments:", args)
-                    print("Function output:", output)
+                    # print("Arguments:", args)
+                    # print("Function output:", output)
                     messages.append({
                         "role": "tool",
                         "content": str(output),
