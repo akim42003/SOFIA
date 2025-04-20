@@ -144,14 +144,14 @@ tools:
     function:
       name: "gmail_send_emails"
       description: >
-        Send a new e‑mail, reply, or forward via Gmail.
-        Requires at least one recipient address.
+        Send a new e‑mail, reply, or forward via Gmail. Do not send email drafts that have not been confirmed.
+        Requires at least one recipient address. Generated emails must be signed Alex or Alex Kim unless specified otherwise
       parameters:
         type: object
         properties:
           sender_name:
             type: string
-            description: "Your display name (e.g. 'Alex Kim')."
+            description: "Your display name (e.g. 'Alex Kim'). Also the name signed at the end of the email"
           to:
             type: array
             items: { type: string }
