@@ -1,6 +1,8 @@
 import os, sys, json
 from typing import List, Dict, Optional
-
+from datetime import datetime
+import re
+import dateparser
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -99,45 +101,73 @@ def gmail_search_emails(
 def gmail_fetch_emails(
     max_results: int = 10,
     unread_only: bool = False,
-    all_inbox: bool = False
+    all_inbox: bool = False,
+    since: Optional[str] = None   # NEW  ← "yesterday", "2025‑04‑10", "3d", None
 ) -> List[Dict[str, str]]:
+    """
+    Fetch up to `max_results` messages from Gmail.
+
+    Args
+    ----
+    max_results   : cap on returned messages
+    unread_only   : only unread if True
+    all_inbox     : include Social/Promotions/etc. if True
+    since         : natural‑language time (e.g. "yesterday", "3d", "2025‑04‑01")
+
+    Returns
+    -------
+    List[dict] with keys id, snippet, date, subject, from
+    """
     service = gmail_service()
 
-    # base Gmail search clause
     if all_inbox:
         clause = "in:inbox"
     else:
-        # Primary = inbox minus the other categories
-        clause = (
-            "in:inbox "
-            "-category:social "
-            "-category:promotions "
-            "-category:updates "
-            "-category:forums"
-        )
+        clause = ("in:inbox "
+                  "-category:social "
+                  "-category:promotions "
+                  "-category:updates "
+                  "-category:forums")
 
-    # add unread filter
     if unread_only:
         clause += " is:unread"
 
-    # issue the list call
+    # ─── 2. since / date filter ────────────────────────────────────
+    if since:
+        # 2a. purely relative pattern like "3d", "12h", "90m"
+        m = re.fullmatch(r"(\d+)([dhm])", since.strip().lower())
+        if m:
+            clause += f" newer_than:{m.group(1)}{m.group(2)}"
+        else:
+            # 2b. parse with dateparser
+            dt: datetime | None = dateparser.parse(since, settings={"TIMEZONE": "UTC"})
+            if dt is None:
+                raise ValueError(f"Could not interpret `since='{since}'`")
+            clause += f" after:{dt.strftime('%Y/%m/%d')}"
+
+    # ─── 3. query Gmail list endpoint ──────────────────────────────
     resp = service.users().messages().list(
         userId="me",
         q=clause,
         maxResults=max_results
     ).execute()
 
-    # fetch snippets
-    results: List[Dict[str,str]] = []
-    for m in resp.get("messages", []):
+    results: List[Dict[str, str]] = []
+    for meta in resp.get("messages", []):
         msg = service.users().messages().get(
             userId="me",
-            id=m["id"],
-            format="metadata"
+            id=meta["id"],
+            format="metadata",
+            metadataHeaders=["Subject", "From", "Date"]
         ).execute()
+
+        hdr = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
         results.append({
-            "id":      m["id"],
-            "snippet": msg.get("snippet", "")
+            "id":       meta["id"],
+            "snippet":  msg.get("snippet", ""),
+            "subject":  hdr.get("Subject", ""),
+            "from":     hdr.get("From", ""),
+            "date":     hdr.get("Date", "")
         })
 
     return results

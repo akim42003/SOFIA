@@ -92,22 +92,34 @@ tools:
     function:
       name: "gmail_fetch_emails"
       description: >
-        Fetch messages from your Gmail inbox.  With `all_inbox=true` you get
-        every message; with `all_inbox=false` (the default) you get only
-        Primary‑tab (important) messages by excluding other categories.
-        You can also set `unread_only=true` to limit to unread mail.
+        Fetch messages from your Gmail inbox.
+        -`all_inbox = true` -> search the entire INBOX (Social, Promotions, etc.)
+        -`all_inbox = false` (default) → only the Primary tab
+        -`unread_only = true` ->limit results to unread messages
+        -`since` → return only mail after a given time.
+          Accepts natural language ("yesterday", "last Monday"),
+          absolute dates ("2025‑04‑15"), or relative shorthands ("3d" = 3 days,
+          "12h" = 12 hours, "90m" = 90 minutes).
+        Return a summary or snippet if requested as well as sender and datetime information.
       parameters:
         type: object
         properties:
           max_results:
             type: integer
-            description: "How many messages to retrieve."
+            description: "Maximum number of messages to retrieve."
           unread_only:
             type: boolean
-            description: "If true, only return unread messages."
+            description: "If true, return only unread messages."
           all_inbox:
             type: boolean
+            description: "If true, include all categories; if false, only Primary."
+          since:
+            type: string
             description: >
-              If true, include all messages in INBOX;
-              if false, only Primary tab (default).
+              Limit results to messages newer than this value.
+              Examples: 'yesterday', '2025‑04‑15', '3d', '12h'.
+            enum:
+              - since
+              - from
+
         required: []
