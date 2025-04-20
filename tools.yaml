@@ -92,15 +92,12 @@ tools:
     function:
       name: "gmail_fetch_emails"
       description: >
-        Fetch messages from your Gmail inbox.
-        -`all_inbox = true` -> search the entire INBOX (Social, Promotions, etc.)
-        -`all_inbox = false` (default) → only the Primary tab
-        -`unread_only = true` ->limit results to unread messages
-        -`since` → return only mail after a given time.
-          Accepts natural language ("yesterday", "last Monday"),
-          absolute dates ("2025‑04‑15"), or relative shorthands ("3d" = 3 days,
-          "12h" = 12 hours, "90m" = 90 minutes).
-        Return a summary or snippet if requested as well as sender and datetime information.
+        Retrieve Gmail messages with flexible filters.
+        Set all_inbox to true to search every category in INBOX (Social, Promotions, Updates, etc.); leave it false to search only the Primary tab.
+        If unread_only is true, only unread messages are returned.
+        The since parameter limits results to mail newer than a given moment and accepts natural language
+        (e.g., “yesterday,” “last Monday”), absolute dates (e.g., 2025‑04‑15), or relative codes such as 3d, 12h, or 90m.
+        Each result includes the sender, date‑time, message ID, and a short snippet upon request.
       parameters:
         type: object
         properties:
@@ -123,3 +120,43 @@ tools:
               - from
 
         required: []
+
+  - type: function
+    function:
+      name: "gmail_send_emails"
+      description: >
+        Send a new e‑mail, reply, or forward via Gmail.
+        Requires at least one recipient address.
+      parameters:
+        type: object
+        properties:
+          sender_name:
+            type: string
+            description: "Your display name (e.g. 'Alex Kim')."
+          to:
+            type: array
+            items: { type: string }
+            description: "List of destination 'To:' e‑mail addresses."
+          subject:
+            type: string
+            description: "Subject line."
+          cc:
+            type: array
+            items: { type: string }
+          bcc:
+            type: array
+            items: { type: string }
+          body:
+            type: string
+            description: "Plain‑text body. Optional."
+          mode:
+            type: string
+            enum: ["new", "reply", "forward"]
+            default: "new"
+          thread_id:
+            type: string
+            description: "Use for reply / forward."
+          message_id:
+            type: string
+            description: "Use for reply / forward."
+        required: ["sender_name", "to", "subject"]

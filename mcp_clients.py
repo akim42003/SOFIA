@@ -29,20 +29,6 @@ def fetch_gmail(
     unread_only: bool = False,
     since: Optional[str] = None        # NEW  ← "yesterday", "3d", "2025‑04‑15", None
 ) -> List[Dict[str, str]]:
-    """
-    Call the gmail_fetch_emails MCP tool and return its list payload.
-
-    Args
-    ----
-    max_results  : cap on number of messages
-    all_inbox    : include Social/Promotions/etc. if True
-    unread_only  : filter unread
-    since        : natural‑language or relative date string (optional)
-
-    Returns
-    -------
-    List[dict] as defined by gmail_fetch_emails
-    """
     # build payload, omitting None fields
     payload = {
         "max_results":  max_results,
@@ -56,6 +42,43 @@ def fetch_gmail(
         async with Client(FastMCPTransport(server)) as client:
             result = await client.call_tool("gmail_fetch_emails", payload)
             # result.content is a list[dict]; adjust if your server wraps differently
+            return result
+
+    return asyncio.run(_call())
+
+def send_gmail(
+    sender_name: str,
+    to: List[str],
+    subject: str,
+    body: Optional[str] = None,
+    cc: Optional[List[str]] = None,
+    bcc: Optional[List[str]] = None,
+    mode: str = "new",                # "new" | "reply" | "forward"
+    thread_id: Optional[str] = None,
+    message_id: Optional[str] = None
+) -> Dict[str, str]:
+
+    payload: Dict[str, object] = {
+        "sender_name": sender_name,
+        "to": to,
+        "subject": subject,
+        "mode": mode,
+    }
+    if body is not None:
+        payload["body"] = body
+    if cc:
+        payload["cc"] = cc
+    if bcc:
+        payload["bcc"] = bcc
+    if thread_id:
+        payload["thread_id"] = thread_id
+    if message_id:
+        payload["message_id"] = message_id
+
+    async def _call():
+        async with Client(FastMCPTransport(server)) as client:
+            result = await client.call_tool("gmail_send_emails", payload)
+            # For this tool result.content is already the dict we want
             return result
 
     return asyncio.run(_call())

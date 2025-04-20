@@ -3,7 +3,7 @@ import json
 import os
 import yaml
 from sys_tools import save_file, read_file, execute_command
-from mcp_clients import fetch_gmail, gmail_search_emails
+from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
 
 def load_config(config_file='tools.yaml'):
     with open(config_file, 'r') as f:
@@ -21,7 +21,8 @@ class ChatBrain:
             "read_file": read_file,
             "execute_command": execute_command,
             "gmail_search_emails": gmail_search_emails,
-            "gmail_fetch_emails": fetch_gmail
+            "gmail_fetch_emails": fetch_gmail,
+            "gmail_send_emails": send_gmail
         }
 
     def execute_tool_calls(self, response):

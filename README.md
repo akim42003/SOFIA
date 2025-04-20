@@ -1,4 +1,6 @@
-### SOFIA
+# SOFIA
 
 ## basic stuff
-# using ollama and open-webui localhost:8080
+### using ollama and FastMCP
+
+### note that sending emails is better if you have llm draft the email and then save it

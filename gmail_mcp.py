@@ -2,6 +2,8 @@ import os, sys, json
 from typing import List, Dict, Optional
 from datetime import datetime
 import re
+import base64, email.utils
+from email.message import EmailMessage
 import dateparser
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
@@ -12,7 +14,7 @@ from fastmcp import FastMCP
 
 TOKEN_FILE = "token.json"
 CREDS_FILE = "credentials.json"
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 
 def gmail_service():
@@ -172,6 +174,56 @@ def gmail_fetch_emails(
 
     return results
 
+@server.tool()
+def gmail_send_emails(
+    sender_name: str,
+    subject: str,
+    to: List[str] | None = None,
+    cc: List[str] | None = None,
+    bcc: List[str] | None = None,
+    body: str | None = None,
+    mode: str = "new",
+    thread_id: str | None = None,
+    message_id: str | None = None
+) -> Dict[str, str]:
+    """
+    Send (new / reply / forward) an e‑mail.
+
+    Returns { id: <gmail id>, threadId: <gmail threadId> }.
+    """
+    svc = gmail_service()
+    me_profile = svc.users().getProfile(userId="me").execute()
+    sender_addr = me_profile["emailAddress"]
+    sender_formatted = email.utils.formataddr((sender_name, sender_addr))
+
+    if mode in {"reply", "forward"} and not (thread_id or message_id):
+        raise ValueError("thread_id or message_id required for reply/forward")
+
+    msg = EmailMessage()
+    msg["From"] = sender_formatted
+
+    if to:
+        msg["To"] = ", ".join(to)
+    if cc:
+        msg["Cc"] = ", ".join(cc)
+    if bcc:
+        msg["Bcc"] = ", ".join(bcc)
+
+    msg["Subject"] = subject
+    msg.set_content(body or "(no body)")
+
+    if mode == "reply":
+        msg["In-Reply-To"] = message_id
+        msg["References"] = message_id
+
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode().rstrip("=")
+
+    request_body = { "raw": raw }
+    if thread_id:
+        request_body["threadId"] = thread_id
+
+    sent = svc.users().messages().send(userId="me", body=request_body).execute()
+    return { "id": sent["id"], "threadId": sent["threadId"] }
 
 
 if __name__ == "__main__":
