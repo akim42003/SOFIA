@@ -79,6 +79,7 @@ def send_gmail(
         async with Client(FastMCPTransport(server)) as client:
             result = await client.call_tool("gmail_send_emails", payload)
             # For this tool result.content is already the dict we want
+            # print(result)
             return result
 
     return asyncio.run(_call())

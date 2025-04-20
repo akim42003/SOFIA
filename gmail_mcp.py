@@ -218,12 +218,23 @@ def gmail_send_emails(
 
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode().rstrip("=")
 
-    request_body = { "raw": raw }
+    request_body = {"raw": raw}
     if thread_id:
         request_body["threadId"] = thread_id
 
-    sent = svc.users().messages().send(userId="me", body=request_body).execute()
-    return { "id": sent["id"], "threadId": sent["threadId"] }
+    sent: dict = svc.users().messages().send(
+        userId="me",
+        body=request_body
+    ).execute()
+
+    content = {
+        "id": sent["id"],          # ← use dict indexing, not .data
+        "subject": subject,
+        "to": to,
+        "body": body
+    }
+    return content
+
 
 
 if __name__ == "__main__":
