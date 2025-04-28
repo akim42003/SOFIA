@@ -113,11 +113,12 @@ tools:
       name: "gmail_fetch_emails"
       description: >
         Retrieve Gmail messages with flexible filters.
-        Set all_inbox to true to search every category in INBOX (Social, Promotions, Updates, etc.); leave it false to search only the Primary tab.
+        Set all_inbox to false to search only the primary tab and leave true otherwise
         If unread_only is true, only unread messages are returned.
         The since parameter limits results to mail newer than a given moment and accepts natural language
         (e.g., “yesterday,” “last Monday”), absolute dates (e.g., 2025‑04‑15), or relative codes such as 3d, 12h, or 90m.
         Each result includes the sender, date‑time, message ID, and a short snippet upon request.
+        Before you return, normalize “since” into an ISO-8601 date-time string (e.g. “2025-04-27T00:00:00-04:00”) and emit that in the `since` field.
       parameters:
         type: object
         properties:
@@ -135,9 +136,6 @@ tools:
             description: >
               Limit results to messages newer than this value.
               Examples: 'yesterday', '2025‑04‑15', '3d', '12h'.
-            enum:
-              - since
-              - from
 
         required: []
 
@@ -192,4 +190,5 @@ tools:
           remove_cred:
             type: bool
             description: Call try except condition to remove google credentials if true
-      required: remove_cred
+      required:
+        - remove_cred

@@ -11,7 +11,7 @@ def load_config(config_file='tools.yaml'):
     return config.get('messages', []), config.get('tools', [])
 
 # Load config from YAML file.
-messages, tools = load_config()
+messages, tools,  = load_config()
 
 class ChatBrain:
     def __init__(self, chat_func):
@@ -67,13 +67,13 @@ class ChatBrain:
         response: ChatResponse = self.chat(
             "qwen2.5",
             messages=messages,
-            tools=tools
+            tools=tools,
         )
         if response.message.tool_calls:
             tool_executed = self.execute_tool_calls(response)
             if tool_executed:
                 # print("SOFIA: Tool executed successfully.")
-                final_response: ChatResponse = self.chat("qwen2.5", messages=messages)
+                final_response: ChatResponse = self.chat("qwen2.5", messages=messages, tools = tools)
                 messages.append({"role": "assistant", "content": final_response.message.content})
                 return final_response.message.content, user_input
         messages.append({"role": "assistant", "content": response.message.content})

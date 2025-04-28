@@ -101,9 +101,9 @@ def gmail_search_emails(
 
 @server.tool()
 def gmail_fetch_emails(
-    max_results: int = 10,
-    unread_only: bool = True,
-    all_inbox: bool = False,
+    max_results: int = 5,
+    unread_only: bool = False,
+    all_inbox: bool = True,
     since: Optional[str] = None   # NEW  ← "yesterday", "2025‑04‑10", "3d", None
 ) -> List[Dict[str, str]]:
     """

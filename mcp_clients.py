@@ -25,7 +25,7 @@ def gmail_search_emails(
 
 def fetch_gmail(
     max_results: int = 5,
-    all_inbox: bool = False,
+    all_inbox: bool = True,
     unread_only: bool = False,
     since: Optional[str] = None        # NEW  ← "yesterday", "3d", "2025‑04‑15", None
 ) -> List[Dict[str, str]]:
