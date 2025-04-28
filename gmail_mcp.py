@@ -102,7 +102,7 @@ def gmail_search_emails(
 @server.tool()
 def gmail_fetch_emails(
     max_results: int = 10,
-    unread_only: bool = False,
+    unread_only: bool = True,
     all_inbox: bool = False,
     since: Optional[str] = None   # NEW  ← "yesterday", "2025‑04‑10", "3d", None
 ) -> List[Dict[str, str]]:
@@ -134,7 +134,6 @@ def gmail_fetch_emails(
     if unread_only:
         clause += " is:unread"
 
-    # ─── 2. since / date filter ────────────────────────────────────
     if since:
         # 2a. purely relative pattern like "3d", "12h", "90m"
         m = re.fullmatch(r"(\d+)([dhm])", since.strip().lower())
@@ -147,7 +146,6 @@ def gmail_fetch_emails(
                 raise ValueError(f"Could not interpret `since='{since}'`")
             clause += f" after:{dt.strftime('%Y/%m/%d')}"
 
-    # ─── 3. query Gmail list endpoint ──────────────────────────────
     resp = service.users().messages().list(
         userId="me",
         q=clause,

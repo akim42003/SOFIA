@@ -44,3 +44,16 @@ def execute_command(command: str) -> str:
         return nl_output
     except Exception as e:
         return f"Error executing command: {e}"
+
+def reset_google_cred(remove_cred: bool) -> str:
+    if remove_cred:
+        try:
+            result = subprocess.run("rm -rf token.json", shell = True, check = True,
+                stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
+            term_output = result.stdout.strip()
+            nl_output = "google credentials reset. this is the terminal output: "+ term_output
+            return nl_output
+        except Exception as e:
+            return f"Error executing command: {e}"
+    else:
+        return f"Error executing command: {e}"

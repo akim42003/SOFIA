@@ -2,7 +2,7 @@ from ollama import ChatResponse, chat
 import json
 import os
 import yaml
-from sys_tools import save_file, read_file, execute_command
+from sys_tools import save_file, read_file, execute_command, reset_google_cred
 from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
 
 def load_config(config_file='tools.yaml'):
@@ -22,7 +22,8 @@ class ChatBrain:
             "execute_command": execute_command,
             "gmail_search_emails": gmail_search_emails,
             "gmail_fetch_emails": fetch_gmail,
-            "gmail_send_emails": send_gmail
+            "gmail_send_emails": send_gmail,
+            "reset_google_cred": reset_google_cred
         }
 
     def execute_tool_calls(self, response):

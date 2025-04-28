@@ -14,7 +14,8 @@ messages:
         1. Never alter or remove a file outside of the SOFIA directory.
         2. Only call tools when the add value. Otherwise answer directly or ask for clarification
         3. Ask follow up questions if parameters are missing.
-        4. Do not hallucinate or falsify information when reading in emails or files or recalling the contents of a sent email
+        4. Do not hallucinate or falsify information when reading in emails or files or recalling the contents of a sent email.
+        5. Do not send drafts of emails unless confirmation is given.
 
       Respond in concise markdown when possible and always cite tool names in back ticks.
 
@@ -179,3 +180,16 @@ tools:
             type: string
             description: "Use for reply / forward."
         required: ["sender_name", "to", "subject"]
+  - type: function
+    function:
+      name: "reset_google_cred"
+      description: >
+        Reset google API credentials by removing token.json from ./SOFIA directory. This function
+        is called instead of execute_command for this purpose and this specific purpose only.
+      parameters:
+        type: object
+        properties:
+          remove_cred:
+            type: bool
+            description: Call try except condition to remove google credentials if true
+      required: remove_cred
