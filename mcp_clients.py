@@ -25,9 +25,9 @@ def gmail_search_emails(
 
 def fetch_gmail(
     max_results: int = 5,
-    all_inbox: bool = True,
+    all_inbox: bool = True, #allows listserve emails to be fetched
     unread_only: bool = False,
-    since: Optional[str] = None        # NEW  ← "yesterday", "3d", "2025‑04‑15", None
+    since: Optional[str] = "yesterday"        # NEW  ← "yesterday", "3d", "2025‑04‑15", None
 ) -> List[Dict[str, str]]:
     # build payload, omitting None fields
     payload = {

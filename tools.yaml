@@ -119,6 +119,7 @@ tools:
         (e.g., “yesterday,” “last Monday”), absolute dates (e.g., 2025‑04‑15), or relative codes such as 3d, 12h, or 90m.
         Each result includes the sender, date‑time, message ID, and a short snippet upon request.
         Before you return, normalize “since” into an ISO-8601 date-time string (e.g. “2025-04-27T00:00:00-04:00”) and emit that in the `since` field.
+        The format should be concise markdown.
       parameters:
         type: object
         properties:
