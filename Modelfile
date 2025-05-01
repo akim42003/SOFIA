@@ -1,5 +1,5 @@
 FROM qwen2.5
 
-PARAMETER temperature 0.1
+PARAMETER temperature 0.3
 
 PARAMETER num_ctx 4096
