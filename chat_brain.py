@@ -65,7 +65,7 @@ class ChatBrain:
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         response: ChatResponse = self.chat(
-            "qwen2.5",
+            "sofia",
             messages=messages,
             tools=tools,
         )
