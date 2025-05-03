@@ -4,9 +4,11 @@
 /whisper
 
 /outputs
+/inputs
 
 credentials.json
 
 token.json
 
-__pycache__
+/__pycache__
+/content
