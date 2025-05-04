@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 session="sofia_start"
 
 cmd_list=(
