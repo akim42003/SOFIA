@@ -1,6 +1,7 @@
-from ollama import ChatResponse, chat
+from ollama import ChatResponse, AsyncClient, chat
 import json
 import os
+import asyncio
 import yaml
 from sys_tools import save_file, read_file, execute_command, reset_google_cred
 from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
@@ -61,7 +62,7 @@ class ChatBrain:
                 print("Function", tool_name, "not found")
         return executed
 
-    def continuous_chat(self, messages):
+    async def continuous_chat(self, messages):
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         response: ChatResponse = self.chat(
@@ -73,18 +74,18 @@ class ChatBrain:
             tool_executed = self.execute_tool_calls(response)
             if tool_executed:
                 # print("SOFIA: Tool executed successfully.")
-                final_response: ChatResponse = self.chat("qwen2.5", messages=messages, tools = tools)
+                final_response: ChatResponse = self.chat("sofia", messages=messages, tools = tools)
                 messages.append({"role": "assistant", "content": final_response.message.content})
                 return final_response.message.content, user_input
         messages.append({"role": "assistant", "content": response.message.content})
 
         return response.message.content, user_input
 
-    def initialize_chat(self, messages):
+    async def initialize_chat(self, messages):
         print("SOFIA: Hi Alex! How can I help you?")
         while True:
             try:
-                response_text, _ = self.continuous_chat(messages)
+                response_text, _ = await self.continuous_chat(messages)
                 if not response_text:
                     response_text = "I'm not sure how to respond."
                 print("SOFIA: " + response_text)
@@ -92,9 +93,9 @@ class ChatBrain:
                 print("\nSOFIA: Goodbye!")
                 break
 
-def main():
+async def main():
     chat_brain_instance = ChatBrain(chat)
-    chat_brain_instance.initialize_chat(messages)
+    await chat_brain_instance.initialize_chat(messages)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
