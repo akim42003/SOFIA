@@ -11,8 +11,6 @@ def load_config(config_file='tools.yaml'):
         config = yaml.safe_load(f)
     return config.get('messages', []), config.get('tools', [])
 
-# Load config from YAML file.
-messages, tools,  = load_config()
 
 class ChatBrain:
     def __init__(self, chat_func):
@@ -27,7 +25,7 @@ class ChatBrain:
             "reset_google_cred": reset_google_cred
         }
 
-    def execute_tool_calls(self, response):
+    def execute_tool_calls(self, response, messages):
         executed = False
         for tool in response.message.tool_calls:
             tool_name = tool.function.name
@@ -62,7 +60,7 @@ class ChatBrain:
                 print("Function", tool_name, "not found")
         return executed
 
-    async def continuous_chat(self, messages):
+    async def continuous_chat(self, messages, tools):
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         response: ChatResponse = self.chat(
@@ -71,7 +69,7 @@ class ChatBrain:
             tools=tools,
         )
         if response.message.tool_calls:
-            tool_executed = self.execute_tool_calls(response)
+            tool_executed = self.execute_tool_calls(response, messages)
             if tool_executed:
                 # print("SOFIA: Tool executed successfully.")
                 final_response: ChatResponse = self.chat("sofia", messages=messages, tools = tools)
@@ -81,11 +79,11 @@ class ChatBrain:
 
         return response.message.content, user_input
 
-    async def initialize_chat(self, messages):
+    async def initialize_chat(self, messages, tools):
         print("SOFIA: Hi Alex! How can I help you?")
         while True:
             try:
-                response_text, _ = await self.continuous_chat(messages)
+                response_text, _ = await self.continuous_chat(messages, tools)
                 if not response_text:
                     response_text = "I'm not sure how to respond."
                 print("SOFIA: " + response_text)
@@ -94,8 +92,10 @@ class ChatBrain:
                 break
 
 async def main():
+    # Load config from YAML file.
+    messages, tools,  = load_config()
     chat_brain_instance = ChatBrain(chat)
-    await chat_brain_instance.initialize_chat(messages)
+    await chat_brain_instance.initialize_chat(messages, tools)
 
 if __name__ == "__main__":
     asyncio.run(main())
