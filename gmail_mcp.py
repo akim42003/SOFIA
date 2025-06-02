@@ -236,8 +236,9 @@ def gmail_send_emails(
 
 
 if __name__ == "__main__":
+    gmail_service()
     if len(sys.argv) > 1 and sys.argv[1] == "auth":
-        gmail_service()            # runs OAuth, saves token.json
+                  # runs OAuth, saves token.json
         print("OAuth finished. Run without 'auth' to start MCP server.")
     else:
         server.run()               # speaks MCP on stdin/stdout

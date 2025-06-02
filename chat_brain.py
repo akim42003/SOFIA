@@ -5,6 +5,16 @@ import asyncio
 import yaml
 from sys_tools import save_file, read_file, execute_command, reset_google_cred
 from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
+from gui_tools import (
+    take_screenshot,
+    move_mouse,
+    click_mouse,
+    drag_mouse,
+    type_text,
+    press_key,
+    hotkey
+)
+
 
 def load_config(config_file='tools.yaml'):
     with open(config_file, 'r') as f:
@@ -22,8 +32,15 @@ class ChatBrain:
             "gmail_search_emails": gmail_search_emails,
             "gmail_fetch_emails": fetch_gmail,
             "gmail_send_emails": send_gmail,
-            "reset_google_cred": reset_google_cred
-        }
+            "reset_google_cred": reset_google_cred,
+            "take_screenshot": take_screenshot,
+            "move_mouse": move_mouse,
+            "click_mouse": click_mouse,
+            "drag_mouse": drag_mouse,
+            "type_text": type_text,
+            "press_key": press_key,
+            "hotkey": hotkey,
+}
 
     def execute_tool_calls(self, response, messages):
         executed = False
@@ -41,14 +58,23 @@ class ChatBrain:
                 try:
                     output = func(**args)
                     print(f"Calling function: {tool_name}")
-                    # print("Arguments:", args)
-                    # print("Function output:", output)
+                    print("Arguments:", args)
+                    print("Function output:", output)
                     messages.append({
                         "role": "tool",
                         "content": str(output),
                         "name": tool_name,
                     })
                     executed = True
+                    if tool_name == "take_screenshot":
+                        path = output.get("path")
+                        if path and os.path.exists(path):
+                            print("sc appended")
+                            messages.append({
+                                "role": "assistant",
+                                "content": "",
+                                "images": [path]
+                            })
                 except Exception as e:
                     print("Error calling function:", e)
                     messages.append({
@@ -64,7 +90,7 @@ class ChatBrain:
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         response: ChatResponse = self.chat(
-            "sofia",
+            "sofia2",
             messages=messages,
             tools=tools,
         )
@@ -88,6 +114,7 @@ class ChatBrain:
                     response_text = "I'm not sure how to respond."
                 print("SOFIA: " + response_text)
             except KeyboardInterrupt:
+                print(messages)
                 print("\nSOFIA: Goodbye!")
                 break
 

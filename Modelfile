@@ -1,5 +1,5 @@
-FROM qwen2.5
+FROM mistral-small3.1:24b
 SYSTEM You are SOFIA a personal AI productivity and life management assistant for Alex Kim.
-PARAMETER temperature 0.6
+PARAMETER temperature 1
 
 PARAMETER num_ctx 32768

@@ -11,16 +11,18 @@ messages:
         6. gmail_send_emails - send gmails given address, subject and sender paramters
 
       There are a few rules you must follow.
-        1. Never alter or remove a file outside of the SOFIA directory.
-        2. Only call tools when the add value. Otherwise answer directly or ask for clarification
-        3. Ask follow up questions if parameters are missing.
-        4. Do not hallucinate or falsify information when reading in emails or files or recalling the contents of a sent email.
-        5. Do not send drafts of emails unless confirmation is given.
+        1. When examining images explore them specifically for recognizable icons and objects.
+        2. Never alter or remove a file outside of the SOFIA directory.
+        3. Only call tools when the add value. Otherwise answer directly or ask for clarification
+        4. Ask follow up questions if parameters are missing.
+        5. Do not hallucinate or falsify information when reading in emails or files or recalling the contents of a sent email.
+        6. Do not send drafts of emails unless confirmation is given.
 
       Respond in concise markdown when possible and always cite tool names in back ticks.
 
   - role: assistant
     content: "Hi Alex! How can I help you today?"
+    images: []
 
 tools:
   - type: function
@@ -193,3 +195,116 @@ tools:
             description: Call try except condition to remove google credentials if true
       required:
         - remove_cred
+  - type: function
+    function:
+      name: "gmail_search_emails"
+      description: "Search inbox by sender and/or subject and return the message verbatim unless a summary or snippet is requested."
+      parameters:
+        type: object
+        properties:
+          sender:
+            type: string
+          subject:
+            type: string
+          max_results:
+            type: integer
+        required: []
+
+  - type: function
+    function:
+      name: "take_screenshot"
+      description: "Capture a screenshot of the current display and return the file path."
+      parameters:
+        type: object
+        properties: {}
+        required: []
+
+  - type: function
+    function:
+      name: "move_mouse"
+      description: "Move the mouse cursor to (x, y)."
+      parameters:
+        type: object
+        properties:
+          x:
+            type: integer
+            description: "Target X coordinate."
+          y:
+            type: integer
+            description: "Target Y coordinate."
+        required:
+          - x
+          - y
+
+  - type: function
+    function:
+      name: "click_mouse"
+      description: "Click the mouse. Button can be 'left', 'right', or 'middle'."
+      parameters:
+        type: object
+        properties:
+          button:
+            type: string
+            enum:
+              - "left"
+              - "right"
+              - "middle"
+        required: []
+
+  - type: function
+    function:
+      name: "drag_mouse"
+      description: "Drag the mouse from the current position to (x, y) over the specified duration."
+      parameters:
+        type: object
+        properties:
+          x:
+            type: integer
+            description: "Target X coordinate."
+          y:
+            type: integer
+            description: "Target Y coordinate."
+          duration:
+            type: number
+            description: "Seconds to take dragging."
+        required:
+          - x
+          - y
+
+  - type: function
+    function:
+      name: "type_text"
+      description: "Type arbitrary text via the keyboard."
+      parameters:
+        type: object
+        properties:
+          text:
+            type: string
+        required:
+          - text
+
+  - type: function
+    function:
+      name: "press_key"
+      description: "Press a single key (e.g., 'enter', 'esc', 'a', etc.)."
+      parameters:
+        type: object
+        properties:
+          key:
+            type: string
+        required:
+          - key
+
+  - type: function
+    function:
+      name: "hotkey"
+      description: "Press a combination of keys (e.g., ['ctrl', 'c'])."
+      parameters:
+        type: object
+        properties:
+          keys:
+            type: array
+            items:
+              type: string
+        required:
+          - keys

@@ -18,7 +18,7 @@ class LLM_EYES:
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         response: ChatResponse = self.chat(
-            "sofia-eyes",
+            "sofia2",
             messages=messages,
         )
         return response.message.content, user_input
