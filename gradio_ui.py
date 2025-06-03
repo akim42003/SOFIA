@@ -15,39 +15,37 @@ def respond(msg, _):
         entry["images"] = files
     messages.append(entry)
 
-    assistant_prefix = ""
+    init_content = ""
     stream = chat("sofia2", messages=messages, tools=tools, stream=True)
 
     for chunk in stream:
-        delta = chunk["message"].get("content", "")
-        assistant_prefix += delta
+        content = chunk["message"].get("content", "")
+        init_content += content
         yield gr.ChatMessage(
             role="assistant",
-            content=assistant_prefix,
+            content=init_content,
             metadata= None
         )
 
         if chunk["message"].get("tool_calls"):
+            yield gr.ChatMessage(
+                role = "assistant",
+                content = "I'll call a tool for this!"
+            )
             brain.execute_tool_calls(chunk, messages)
             resumed = chat("sofia2", messages=messages, tools=tools, stream=True)
             for resumed_chunk in resumed:
-                delta2 = resumed_chunk["message"].get("content", "")
-                assistant_prefix += delta2
+                tool_content = resumed_chunk["message"].get("content", "")
+                init_content += tool_content
+                metaData = {"title": "🛠️ Used tool"}
                 yield gr.ChatMessage(
                     role="assistant",
-                    content=assistant_prefix,
-                    metadata={"title": "Thinking", "status": "pending"}
+                    content=init_content,
+                    metadata= metaData
                 )
             break
 
-    # After (no metadata -> plain bubble)
-    yield gr.ChatMessage(
-        role="assistant",
-        content=assistant_prefix,
-        metadata=None
-    )
-
-    messages.append({"role": "assistant", "content": assistant_prefix})
+    messages.append({"role": "assistant", "content": init_content})
 
 with gr.Blocks() as demo:
     chatbot = gr.Chatbot(messages, type="messages")
@@ -59,4 +57,4 @@ with gr.Blocks() as demo:
         title="🤖 Sofia Chat (Vision + Tooling)"
     )
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=7860)
