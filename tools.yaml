@@ -1,24 +1,24 @@
 messages:
   - role: system
     content: >
-      You are SOFIA a personal AI productivity and life management assistant for Alex Kim.
-      You currently have access these tools.
+      You are SOFIA, a personal AI productivity and life management assistant for Alex Kim.
+      You currently have access to these tools:
         1. save_file - write and save to files
         2. read_file - read files into the chat history
         3. execute_command - execute system commands via terminal
-        4. gmail_search_emails - search gmails from inbox given search parameters
-        5. gmail_fetch_emails - fetch gmails from inbox given datetime/ quantitative information
-        6. gmail_send_emails - send gmails given address, subject and sender paramters
+        4. gmail_search_emails - search inbox by sender/subject
+        5. gmail_fetch_emails - fetch Gmail messages by filters
+        6. gmail_send_emails - send a new email, reply, or forward
 
-      There are a few rules you must follow.
-        1. When examining images explore them specifically for recognizable icons and objects.
-        2. Never alter or remove a file outside of the SOFIA directory.
-        3. Only call tools when the add value. Otherwise answer directly or ask for clarification
-        4. Ask follow up questions if parameters are missing.
-        5. Do not hallucinate or falsify information when reading in emails or files or recalling the contents of a sent email.
-        6. Do not send drafts of emails unless confirmation is given.
+      Rules:
+        1. When examining images, look for recognizable icons/objects.
+        2. Every time you call save_file or read_file, the ‘path’ argument **must** begin with ‘/home/alex/SOFIA/’. If the user provides a path without that prefix, first prepend ‘~/SOFIA/’ before invoking the function.
+        3. Only call tools when they add value. Otherwise, answer directly or ask for clarification.
+        4. Ask follow-up questions if parameters are missing.
+        5. Do not hallucinate or falsify information when reading emails/files.
+        6. Do not send drafts of emails unless explicitly confirmed.
 
-      Respond in concise markdown when possible and always cite tool names in back ticks.
+      Respond in concise Markdown when possible and always cite tool names in backticks.
 
   - role: assistant
     content: "Hi Alex! How can I help you today?"
@@ -29,105 +29,79 @@ tools:
     function:
       name: save_file
       description: >
-        Edits and saves generated content into a file that already exists.
-        Use this tool when you want to persist output for logging, archiving, or future reference.
-        For example, if you need to store an essay, transcript, or any generated text for later review,
-        call this tool. All file paths must start with '~/SOFIA/' (e.g., '~/SOFIA/outputs/haiku.txt').
+        Edits or creates text content in an existing file. All file paths must start with '/home/alex/SOFIA/'.
       parameters:
         type: object
         properties:
-          action:
-            type: string
-            description: "The operation to perform. Choose 'save' or 'create' to write new content."
-            enum:
-              - save
-              - create
           path:
             type: string
-            description: >
-              The complete file path where the content will be saved.
-              This should begin with '~/SOFIA/outputs/'.
+            description: "Full file path under '/home/alex/SOFIA/' to write."
           content:
             type: string
-            description: "The text content to write to the file."
+            description: "Text to write."
         required:
-          - action
           - path
+          - content
 
   - type: function
     function:
       name: read_file
       description: >
-        Reads content from a file and imports it into the conversation.
-        Use this tool when you want to inject external context into the chat,
-        such as retrieving a saved document, a configuration file, or previously logged data.
-        The file path provided should point to an accessible file or can be assembled based on context.
+        Reads content from a file. Provide a valid path under '/home/alex/SOFIA/'.
       parameters:
         type: object
         properties:
-          action:
-            type: string
-            description: "The operation to perform. Use 'read' or 'open' to load the file content."
-            enum:
-              - read
-              - open
           path:
             type: string
-            description: "The path of the file to be read."
+            description: "Full file path under '/home/alex/SOFIA/' to read."
         required:
-          - action
           - path
 
   - type: function
     function:
       name: execute_command
       description: >
-        Executes system commands directly on the host terminal.
-        Use this tool for operations that require command line actions
-        such as moving files, changing directories, or running scripts.
-        Use with caution, ensuring that only safe and validated commands are executed.
+        Runs a shell command on the host. Use sparingly and only for safe, validated commands.
       parameters:
         type: object
         properties:
           command:
             type: string
-            description: "The shell command to execute (e.g., 'ls -la', 'mv file1 file2')."
+            description: "Shell command to run (e.g. 'ls -la')."
         required:
           - command
 
   - type: function
     function:
-      name: "gmail_search_emails"
-      description: "Search inbox by sender and/or subject and return the message verbatim unless a summary or snippet is requested."
+      name: gmail_search_emails
+      description: >
+        Search inbox by sender and/or subject and return full messages unless a snippet is requested.
       parameters:
         type: object
         properties:
           sender:
             type: string
+            description: "Email address of the sender to filter by."
           subject:
             type: string
+            description: "Subject line to filter by."
           max_results:
             type: integer
+            description: "Max number of messages to return."
         required: []
 
   - type: function
     function:
-      name: "gmail_fetch_emails"
+      name: gmail_fetch_emails
       description: >
-        Retrieve Gmail messages with flexible filters.
-        Set all_inbox to false to search only the primary tab and leave true otherwise
-        If unread_only is true, only unread messages are returned.
-        The since parameter limits results to mail newer than a given moment and accepts natural language
-        (e.g., “yesterday,” “last Monday”), absolute dates (e.g., 2025‑04‑15), or relative codes such as 3d, 12h, or 90m.
-        Each result includes the sender, date‑time, message ID, and a short snippet upon request.
-        Before you return, normalize “since” into an ISO-8601 date-time string (e.g. “2025-04-27T00:00:00-04:00”) and emit that in the `since` field.
-        The format should be concise markdown.
+        Retrieve Gmail messages with filters. If `unread_only` is true, only unread messages return.
+        Normalize `since` to ISO‑8601 (e.g., '2025-04-27T00:00:00‑04:00').
       parameters:
         type: object
         properties:
           max_results:
             type: integer
-            description: "Maximum number of messages to retrieve."
+            description: "Max messages to retrieve."
           unread_only:
             type: boolean
             description: "If true, return only unread messages."
@@ -136,83 +110,73 @@ tools:
             description: "If true, include all categories; if false, only Primary."
           since:
             type: string
-            description: >
-              Limit results to messages newer than this value.
-              Examples: 'yesterday', '2025‑04‑15', '3d', '12h'.
-
+            description: "Filter to messages newer than this (e.g., '3d', '2025-04-15')."
         required: []
 
   - type: function
     function:
-      name: "gmail_send_emails"
+      name: gmail_send_emails
       description: >
-        Send a new e‑mail, reply, or forward via Gmail. Do not send email drafts that have not been confirmed.
-        Requires at least one recipient address. Generated emails must be signed Alex or Alex Kim unless specified otherwise
+        Send, reply, or forward an email. Requires 'sender_name', 'to', and 'subject'. Sign as Alex Kim.
       parameters:
         type: object
         properties:
           sender_name:
             type: string
-            description: "Your display name (e.g. 'Alex Kim'). Also the name signed at the end of the email"
+            description: "Your display name (e.g. 'Alex Kim')."
           to:
             type: array
-            items: { type: string }
-            description: "List of destination 'To:' e‑mail addresses."
+            items:
+              type: string
+            description: "List of recipient addresses."
           subject:
             type: string
-            description: "Subject line."
+            description: "Email subject line."
           cc:
             type: array
-            items: { type: string }
+            items:
+              type: string
+            description: "Optional list of CC addresses."
           bcc:
             type: array
-            items: { type: string }
+            items:
+              type: string
+            description: "Optional list of BCC addresses."
           body:
             type: string
-            description: "Plain‑text body. Optional."
+            description: "Plain‑text body."
           mode:
             type: string
             enum: ["new", "reply", "forward"]
             default: "new"
           thread_id:
             type: string
-            description: "Use for reply / forward."
+            description: "Use only for replies/forwards."
           message_id:
             type: string
-            description: "Use for reply / forward."
-        required: ["sender_name", "to", "subject"]
+            description: "Use only for replies/forwards."
+        required:
+          - sender_name
+          - to
+          - subject
+
   - type: function
     function:
-      name: "reset_google_cred"
+      name: reset_google_cred
       description: >
-        Reset google API credentials by removing token.json from ./SOFIA directory. This function
-        is called instead of execute_command for this purpose and this specific purpose only.
+        Remove token.json from ~/SOFIA/ to reset Google API credentials.
       parameters:
         type: object
         properties:
           remove_cred:
-            type: bool
-            description: Call try except condition to remove google credentials if true
-      required:
-        - remove_cred
-  - type: function
-    function:
-      name: "gmail_search_emails"
-      description: "Search inbox by sender and/or subject and return the message verbatim unless a summary or snippet is requested."
-      parameters:
-        type: object
-        properties:
-          sender:
-            type: string
-          subject:
-            type: string
-          max_results:
-            type: integer
-        required: []
+            type: boolean
+            description: "If true, delete token.json."
+        required:
+          - remove_cred
 
   - type: function
     function:
-      name: "take_screenshot"
+      name: take_screenshot
       description: "Capture a screenshot of the current display and return the file path."
       parameters:
         type: object
@@ -221,7 +185,7 @@ tools:
 
   - type: function
     function:
-      name: "move_mouse"
+      name: move_mouse
       description: "Move the mouse cursor to (x, y)."
       parameters:
         type: object
@@ -238,7 +202,7 @@ tools:
 
   - type: function
     function:
-      name: "click_mouse"
+      name: click_mouse
       description: "Click the mouse. Button can be 'left', 'right', or 'middle'."
       parameters:
         type: object
@@ -249,31 +213,29 @@ tools:
               - "left"
               - "right"
               - "middle"
-        required: []
+        required:
+          - button
 
   - type: function
     function:
-      name: "drag_mouse"
+      name: drag_mouse
       description: "Drag the mouse from the current position to (x, y) over the specified duration."
       parameters:
         type: object
         properties:
           x:
             type: integer
-            description: "Target X coordinate."
           y:
             type: integer
-            description: "Target Y coordinate."
           duration:
             type: number
-            description: "Seconds to take dragging."
         required:
           - x
           - y
 
   - type: function
     function:
-      name: "type_text"
+      name: type_text
       description: "Type arbitrary text via the keyboard."
       parameters:
         type: object
@@ -285,8 +247,8 @@ tools:
 
   - type: function
     function:
-      name: "press_key"
-      description: "Press a single key (e.g., 'enter', 'esc', 'a', etc.)."
+      name: press_key
+      description: "Press a single key (e.g., 'enter', 'esc', 'a')."
       parameters:
         type: object
         properties:
@@ -297,7 +259,7 @@ tools:
 
   - type: function
     function:
-      name: "hotkey"
+      name: hotkey
       description: "Press a combination of keys (e.g., ['ctrl', 'c'])."
       parameters:
         type: object

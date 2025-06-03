@@ -1,95 +1,62 @@
 import gradio as gr
-import os
-import json
-import yaml
 from ollama import chat
-
-from sys_tools import save_file, read_file, execute_command, reset_google_cred
-from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
-
-from chat_brain import ChatBrain, load_config
+from chat_brain import load_config, ChatBrain
 
 INITIAL_MESSAGES, TOOLS_SPEC = load_config("tools.yaml")
-
-brain = ChatBrain(chat)
 messages = INITIAL_MESSAGES.copy()
 tools = TOOLS_SPEC.copy()
+brain = ChatBrain(chat)
 
-def build_user_message(user_text: str, image_path: str) -> dict:
-    user_text = user_text or ""
-    if image_path:
-        return {
-            "role": "user",
-            "content": user_text,
-            "images": [image_path]
-        }
-    else:
-        return {"role": "user", "content": user_text}
+def respond(msg, _):
+    text  = msg.get("text", "") if isinstance(msg, dict) else str(msg)
+    files = msg.get("files", []) if isinstance(msg, dict) else []
+    entry = {"role": "user", "content": text}
+    if files:
+        entry["images"] = files
+    messages.append(entry)
 
-def respond(user_text, image, chat_history):
-    if chat_history is None:
-        chat_history = []
+    assistant_prefix = ""
+    stream = chat("sofia2", messages=messages, tools=tools, stream=True)
 
-    try:
-        user_msg = build_user_message(user_text, image)
-    except FileNotFoundError as e:
-        chat_history.append((f"[Error] {e}", ""))
-        yield chat_history, "", None
-        return
+    for chunk in stream:
+        delta = chunk["message"].get("content", "")
+        assistant_prefix += delta
+        yield gr.ChatMessage(
+            role="assistant",
+            content=assistant_prefix,
+            metadata= None
+        )
 
-    messages.append(user_msg)
+        if chunk["message"].get("tool_calls"):
+            brain.execute_tool_calls(chunk, messages)
+            resumed = chat("sofia2", messages=messages, tools=tools, stream=True)
+            for resumed_chunk in resumed:
+                delta2 = resumed_chunk["message"].get("content", "")
+                assistant_prefix += delta2
+                yield gr.ChatMessage(
+                    role="assistant",
+                    content=assistant_prefix,
+                    metadata={"title": "Thinking", "status": "pending"}
+                )
+            break
 
-    partial_reply = ""
-    stream_iter = chat(
-        "sofia2",
-        messages=messages,
-        tools=tools,
-        stream=True
+    # After (no metadata -> plain bubble)
+    yield gr.ChatMessage(
+        role="assistant",
+        content=assistant_prefix,
+        metadata=None
     )
 
-    for chunk in stream_iter:
-        new_text = chunk["message"].get("content", "")
-        partial_reply += new_text
-
-        if not chat_history or chat_history[-1][0] != user_text:
-            chat_history.append((user_text, partial_reply))
-        else:
-            chat_history[-1] = (user_text, partial_reply)
-
-        yield chat_history, "", None
-
-    messages.append({"role": "assistant", "content": partial_reply})
-    yield chat_history, "", None
+    messages.append({"role": "assistant", "content": assistant_prefix})
 
 with gr.Blocks() as demo:
-    gr.Markdown("## 🤖 Sofia Chat (Vision + Tooling)")
-
-    chatbot = gr.Chatbot(label="Sofia", height=500)
-
-    with gr.Row():
-        txt = gr.Textbox(
-            label="Type your message",
-            placeholder="Enter text here (or leave blank to send only an image)",
-            lines=12
-        )
-        img = gr.Image(
-            label="Drag & drop an image (optional)",
-            type="filepath",
-            interactive=True
-        )
-
-    send_btn = gr.Button("Send")
-
-    send_btn.click(
+    chatbot = gr.Chatbot(messages, type="messages")
+    gr.ChatInterface(
         fn=respond,
-        inputs=[txt, img, chatbot],
-        outputs=[chatbot, txt, img],
-    )
-    txt.submit(
-        fn=respond,
-        inputs=[txt, img, chatbot],
-        outputs=[chatbot, txt, img],
-
+        chatbot=chatbot,
+        type="messages",
+        multimodal=True,
+        title="🤖 Sofia Chat (Vision + Tooling)"
     )
 
 demo.launch()

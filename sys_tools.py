@@ -2,7 +2,13 @@ import json
 import os
 import subprocess
 
-def save_file(action: str, path: str, content: str) -> str:
+def normalize_path(raw_path):
+    if not raw_path.startswith("/home/alex/SOFIA/"):
+        return f"/home/alex/SOFIA/{raw_path.lstrip('/')}"
+    return raw_path
+
+def save_file(path: str, content: str) -> str:
+    path = normalize_path(path)
     try:
         # Expand the user directory in the given path.
         expanded_path = os.path.expanduser(path)
@@ -19,7 +25,8 @@ def save_file(action: str, path: str, content: str) -> str:
     except Exception as e:
         return f"Error saving file: {e}"
 
-def read_file(action: str, path: str):
+def read_file(path: str):
+    path = normalize_path(path)
     try:
         expanded_path = os.path.expanduser(path)
         # print(expanded_path)
