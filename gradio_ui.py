@@ -49,6 +49,7 @@ def respond(msg, _):
 
 with gr.Blocks() as demo:
     chatbot = gr.Chatbot(messages, type="messages")
+    gr.Radio(["Chat", "Agent"])
     gr.ChatInterface(
         fn=respond,
         chatbot=chatbot,
