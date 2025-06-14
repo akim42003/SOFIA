@@ -1,8 +1,8 @@
 #.gitignore
 .ropeproject
-
+/OmniParser
 /whisper
-
+/weights
 /outputs
 /inputs
 

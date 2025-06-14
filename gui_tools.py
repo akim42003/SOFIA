@@ -1,13 +1,25 @@
 import pyautogui
 import tempfile
+import mss
+from PIL import Image
 
 def take_screenshot():
-    screenshot = pyautogui.screenshot()
+    """
+    Capture just the primary monitor (monitors[1] in mss) and
+    return a dict with the temporary PNG path.
+    """
+    with mss.mss() as sct:
+        # monitors[0] = virtual desktop, monitors[1] = primary display
+        mon = sct.monitors[1]                # {'left':0,'top':0,'width':..., 'height':...}
+        raw = sct.grab(mon)                  # raw BGRA bytes
+
+    img = Image.frombytes("RGB", raw.size, raw.rgb)
+
     tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-    path = tmp.name
-    tmp.close()
-    screenshot.save(path)
-    return {"path": path}
+    img.save(tmp.name)
+    tmp.close()                              # keep the file on disk
+
+    return {"path": tmp.name}
 
 def move_mouse(x: int, y: int):
     pyautogui.moveTo(x, y)

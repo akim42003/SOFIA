@@ -7,6 +7,7 @@ messages = INITIAL_MESSAGES.copy()
 tools = TOOLS_SPEC.copy()
 brain = ChatBrain(chat)
 
+
 def respond(msg, _):
     text  = msg.get("text", "") if isinstance(msg, dict) else str(msg)
     files = msg.get("files", []) if isinstance(msg, dict) else []
@@ -49,13 +50,13 @@ def respond(msg, _):
 
 with gr.Blocks() as demo:
     chatbot = gr.Chatbot(messages, type="messages")
-    gr.Radio(["Chat", "Agent"])
+    #gr.Radio(["Chat", "Agent"])
     gr.ChatInterface(
         fn=respond,
         chatbot=chatbot,
         type="messages",
         multimodal=True,
-        title="🤖 Sofia Chat (Vision + Tooling)"
+        title="🤖 Sofia Chat (Vision + Tooling)",
     )
 
 demo.launch(server_name="0.0.0.0", server_port=7860)

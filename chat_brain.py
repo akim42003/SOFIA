@@ -4,6 +4,7 @@ import os
 import yaml
 from sys_tools import save_file, read_file, execute_command, reset_google_cred
 from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
+from OP_tool import process_image
 from gui_tools import (
     take_screenshot,
     move_mouse,
@@ -68,10 +69,12 @@ class ChatBrain:
                     if tool_name == "take_screenshot":
                         path = output.get("path")
                         if path and os.path.exists(path):
-                            print("sc appended")
+                            print("processing images")
+                            image_content = process_image(path)
+                            # print(image_content)
                             messages.append({
                                 "role": "assistant",
-                                "content": "",
+                                "content": image_content,
                                 "images": [path]
                             })
                 except Exception as e:
