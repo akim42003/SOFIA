@@ -4,9 +4,9 @@
 
 ## ✨ Features
 
-### 🧠 Intelligent Chat System
+### 🧠 Augmented Chat System
 - **Multimodal Conversations** - Chat with text and images through an intuitive Gradio interface
-- **Tool-Augmented AI** - SOFIA can execute actions based on your requests, not just respond with text
+- **Tool-Enabled AI** - SOFIA can execute actions based on your requests, not just respond with text
 - **Streaming Responses** - Real-time feedback as SOFIA processes your requests
 
 ### 🖥️ Desktop Automation
@@ -61,7 +61,7 @@
 - Python 3.11+
 - Conda (recommended for virtual environment)
 - Ollama installed and running
-- CUDA-capable GPU (recommended for computer vision features)
+- CUDA-capable GPU (requires running Ollama docker daemon on GPU)
 
 ### Installation
 
@@ -106,10 +106,6 @@ Then open your browser to `http://localhost:7860`
 python chat_brain.py
 ```
 
-#### Voice Assistant
-```bash
-python speaking_llm.py
-```
 
 ## 📁 Project Structure
 
@@ -144,9 +140,6 @@ SOFIA's behavior and available tools are configured in `tools.yaml`. You can cus
 - Command execution is logged and can be restricted
 - Sensitive credentials are stored securely using system keyrings
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## 📝 License
 
@@ -161,15 +154,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ ] Browser automation integration
 - [ ] Plugin system for custom tools
 
-## 🙏 Acknowledgments
-
-Built with love using:
-- [Ollama](https://ollama.ai) for local LLM inference
-- [FastMCP](https://github.com/fastmcp/fastmcp) for tool integration
-- [Gradio](https://gradio.app) for the web interface
-- [OmniParser](https://github.com/OmniParser) for UI understanding
-- The amazing open-source AI community
-
----
 
 **Note**: SOFIA is designed for personal automation and productivity. Always ensure you understand what commands SOFIA will execute before confirming actions.
