@@ -1,8 +1,8 @@
 import gradio as gr
 from ollama import chat
-from chat_brain import load_config, ChatBrain
+from sofia.core.brain import load_config, ChatBrain
 
-INITIAL_MESSAGES, TOOLS_SPEC = load_config("tools.yaml")
+INITIAL_MESSAGES, TOOLS_SPEC = load_config("config/tools.yaml")
 messages = INITIAL_MESSAGES.copy()
 tools = TOOLS_SPEC.copy()
 brain = ChatBrain(chat)

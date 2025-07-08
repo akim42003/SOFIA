@@ -22,4 +22,4 @@ fi
 
 # Run the invisible SOFIA UI
 echo "Starting Invisible SOFIA..."
-python invisible_sofia.py
+python sofia_transparent.py

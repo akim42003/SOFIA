@@ -2,7 +2,7 @@ from typing import List, Dict
 
 import torch
 from PIL import Image
-from util.utils import (
+from sofia.vision.utils import (
     check_ocr_box,
     get_yolo_model,
     get_caption_model_processor,
@@ -23,22 +23,7 @@ caption_model_processor = get_caption_model_processor(
 
 # ─── helper: ensure bbox is pixels, then add center_px ──────────────
 def postprocess_elements(elems: List[Dict], w: int, h: int) -> List[Dict]:
-    """
-    Parameters:
-    elems : list of raw OmniParser element dicts
-    w, h  : int  screenshot width & height
 
-    Returns
-    -------
-    list[dict]  each element =>
-        {
-            "id"        : int,                 # 0-based order
-            "type"      : "icon" | "text" | …,
-            "label"     : str,                 # from `content` if present
-            "bbox_px"   : [x1,y1,x2,y2],       # ints in virtual-desk pixels
-            "center_px" : (cx,cy)              # ints, ready for pyautogui
-        }
-    """
     cleaned = []
     for idx, e in enumerate(elems):
         x1, y1, x2, y2 = e["bbox"]

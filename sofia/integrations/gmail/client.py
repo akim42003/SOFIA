@@ -1,4 +1,4 @@
-from gmail_mcp import server
+from sofia.integrations.gmail.server import server
 from fastmcp import Client
 from fastmcp.client.transports import FastMCPTransport
 from typing import List, Dict, Optional

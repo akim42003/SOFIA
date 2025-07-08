@@ -1,6 +1,6 @@
-# SOFIA - Smart Ollama Framework for Intelligent Automation
+# SOFIA - Sort of Functional Interactive Agent
 
-🤖 **SOFIA** is a powerful AI assistant that bridges the gap between large language models and your desktop, enabling seamless automation of tasks through natural language conversations.
+🤖 **SOFIA** is a *sometimes* powerful AI assistant that bridges the gap between large language models and your desktop, enabling seamless automation of tasks through natural language conversations.
 
 ## ✨ Features
 
@@ -23,37 +23,6 @@
 - **File Operations** - Read, write, and manage files within the SOFIA directory
 - **Command Execution** - Run system commands safely through natural language
 - **Sandboxed Environment** - All operations are contained within `/home/alex/SOFIA/` for security
-
-### 🎙️ Voice Interface (Experimental)
-- **Push-to-Talk** - Hands-free interaction using speech recognition
-- **Natural TTS** - SOFIA responds with synthesized speech
-- **Standalone Mode** - Run as a voice assistant without the web UI
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐     ┌──────────────┐
-│   gradio_ui.py  │────▶│ chat_brain.py│
-│  (Web Interface)│     │(Core Logic) │
-└─────────────────┘     └───────┬──────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                       │
-    ┌───▼────┐          ┌──────▼──────┐        ┌──────▼──────┐
-    │sys_tools│          │ gui_tools   │        │ mcp_clients │
-    │  (I/O)  │          │(Automation) │        │   (Gmail)   │
-    └─────────┘          └──────┬──────┘        └──────┬──────┘
-                                │                       │
-                         ┌──────▼──────┐         ┌─────▼──────┐
-                         │  OP_tool    │         │gmail_mcp.py│
-                         │(OmniParser) │         │(MCP Server)│
-                         └──────┬──────┘         └────────────┘
-                                │
-                         ┌──────▼──────┐
-                         │util modules │
-                         │(CV/OCR/YOLO)│
-                         └─────────────┘
-```
 
 ## 🚀 Getting Started
 
@@ -90,40 +59,60 @@
 5. **Set up Gmail integration (optional)**
    ```bash
    # Run the Gmail MCP server in a separate terminal
-   fastmcp run gmail_mcp.py
+   python sofia_gmail.py
    ```
 
 ### Running SOFIA
 
 #### Web Interface (Recommended)
 ```bash
-python gradio_ui.py
+python sofia_web.py
 ```
 Then open your browser to `http://localhost:7860`
 
-#### Command Line Interface
+#### Desktop Interface
 ```bash
-python chat_brain.py
+python sofia_desktop.py       # Invisible floating assistant
+python sofia_transparent.py   # Transparent chat window
 ```
 
+#### Voice Interface
+```bash
+python sofia_voice.py
+```
 
 ## 📁 Project Structure
 
 ```
 SOFIA/
-├── chat_brain.py        # Core orchestration logic
-├── gradio_ui.py         # Web interface
-├── tools.yaml           # Tool configurations and prompts
-├── sys_tools.py         # File and command operations
-├── gui_tools.py         # Desktop automation
-├── OP_tool.py           # OmniParser for UI understanding
-├── mcp_clients.py       # Gmail client wrapper
-├── gmail_mcp.py         # Gmail MCP server
-├── speaking_llm.py      # Voice interface
-├── util/                # Computer vision utilities
-│   ├── utils.py         # YOLO, OCR, and captioning
-│   └── box_annotator.py # UI element visualization
-└── Modelfile            # Ollama model configuration
+├── sofia/                    # Main package
+│   ├── core/                 # Core functionality
+│   │   ├── brain.py          # Central orchestration logic
+│   │   └── tools/            # Tool implementations
+│   │       ├── system.py     # File and command operations
+│   │       └── desktop.py    # Desktop automation
+│   ├── vision/               # Computer vision
+│   │   ├── omniparser.py     # OmniParser for UI understanding
+│   │   ├── utils.py          # YOLO, OCR, and captioning
+│   │   └── box_annotator.py  # UI element visualization
+│   ├── ui/                   # User interfaces
+│   │   ├── web/              # Web interfaces
+│   │   │   └── gradio_app.py # Gradio web interface
+│   │   ├── desktop/          # Desktop interfaces
+│   │   │   ├── invisible.py  # Floating assistant
+│   │   │   └── transparent.py # Transparent chat
+│   │   ├── voice/            # Voice interfaces
+│   │   │   └── assistant.py  # Voice assistant
+│   │   └── widgets/          # Reusable UI components
+│   └── integrations/         # External service integrations
+│       └── gmail/            # Gmail integration
+│           ├── server.py     # Gmail MCP server
+│           └── client.py     # Gmail client wrapper
+├── config/                   # Configuration files
+│   ├── tools.yaml           # Tool configurations and prompts
+│   └── Modelfile            # Ollama model configuration
+├── scripts/                  # Utilities and scripts
+└── sofia_*.py               # Entry point scripts
 ```
 
 ## 🔧 Configuration

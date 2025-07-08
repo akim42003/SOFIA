@@ -11,11 +11,11 @@ from datetime import datetime
 from pathlib import Path
 
 # Import existing SOFIA components
-from gui_tools import take_screenshot
-from chat_brain import ChatBrain, load_config
-from OP_tool import process_image
-from region_selector import RegionSelector
-from chat_dialog import ChatDialog
+from sofia.core.tools.desktop import take_screenshot
+from sofia.core.brain import ChatBrain, load_config
+from sofia.vision.omniparser import process_image
+from sofia.ui.widgets.region_selector import RegionSelector
+from sofia.ui.widgets.chat_dialog import ChatDialog
 import whisper
 import mss
 import ollama

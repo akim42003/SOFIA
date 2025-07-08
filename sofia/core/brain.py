@@ -2,10 +2,10 @@ from ollama import ChatResponse, chat
 import json
 import os
 import yaml
-from sys_tools import save_file, read_file, execute_command, reset_google_cred
-from mcp_clients import fetch_gmail, gmail_search_emails, send_gmail
-from OP_tool import process_image
-from gui_tools import (
+from sofia.core.tools.system import save_file, read_file, execute_command, reset_google_cred
+from sofia.integrations.gmail.client import fetch_gmail, gmail_search_emails, send_gmail
+from sofia.vision.omniparser import process_image
+from sofia.core.tools.desktop import (
     take_screenshot,
     move_mouse,
     click_mouse,
@@ -16,7 +16,7 @@ from gui_tools import (
 )
 
 
-def load_config(config_file='tools.yaml'):
+def load_config(config_file='config/tools.yaml'):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
     return config.get('messages', []), config.get('tools', [])
