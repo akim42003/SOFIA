@@ -5,5 +5,5 @@ Launches the invisible desktop assistant for SOFIA
 """
 
 if __name__ == "__main__":
-    from sofia.ui.desktop.invisible import main
+    from sofia.ui.desktop.transparent import main
     main()

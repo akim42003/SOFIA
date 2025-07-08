@@ -70,26 +70,48 @@ class AudioRecorder(QThread):
 class AnalysisThread(QThread):
     response_received = pyqtSignal(str)
 
-    def __init__(self, prompt, image_path=None):
+    def __init__(self, prompt, image_path=None, brain=None, chat_messages=None, tools=None):
         super().__init__()
         self.prompt = prompt
         self.image_path = image_path
+        self.brain = brain
+        self.chat_messages = chat_messages or []
+        self.tools = tools or []
 
     def run(self):
         try:
-            messages = [{
+            # Build message with proper context
+            user_message = {
                 "role": "user",
                 "content": self.prompt
-            }]
+            }
 
             if self.image_path:
-                messages[0]["images"] = [self.image_path]
+                user_message["images"] = [self.image_path]
 
-            response = ""
-            for chunk in ollama.chat(model="sofia2", messages=messages, stream=True):
-                response += chunk['message']['content']
+            # Use full conversation history + new message
+            messages = self.chat_messages + [user_message]
 
-            self.response_received.emit(response)
+            # Use brain for tool-enabled chat if available
+            if self.brain:
+                response = ""
+                for chunk in ollama.chat(model="sofia2", messages=messages, tools=self.tools, stream=True):
+                    if hasattr(chunk['message'], 'tool_calls') and chunk['message'].tool_calls:
+                        # Execute tool calls
+                        self.brain.execute_tool_calls(chunk, messages)
+                    
+                    content = chunk['message'].get('content', '')
+                    if content:
+                        response += content
+
+                self.response_received.emit(response)
+            else:
+                # Fallback to simple chat
+                response = ""
+                for chunk in ollama.chat(model="sofia2", messages=messages, stream=True):
+                    response += chunk['message']['content']
+
+                self.response_received.emit(response)
         except Exception as e:
             self.response_received.emit(f"Error: {str(e)}")
 
@@ -104,6 +126,7 @@ class TransparentChatWindow(QWidget):
         self.current_screenshot = None
         self.region_selector = None
         self.analysis_thread = None
+        self.chat_messages = []  # Store conversation history
 
     def initUI(self):
         # Window properties
@@ -180,7 +203,7 @@ class TransparentChatWindow(QWidget):
             """)
 
         minimize_btn.clicked.connect(self.showMinimized)
-        close_btn.clicked.connect(self.hide)
+        close_btn.clicked.connect(self.close)
 
         title_layout.addWidget(title_label)
         title_layout.addStretch()
@@ -360,9 +383,17 @@ class TransparentChatWindow(QWidget):
         try:
             messages, tools = load_config()
             self.config = {"messages": messages, "tools": tools}
-            self.add_message("system", "SOFIA initialized and ready to help! 🤖")
+            
+            # Initialize ChatBrain for tool execution
+            self.brain = ChatBrain(ollama.chat)
+            
+            # Initialize conversation with system messages
+            self.chat_messages = messages.copy()
+            
+            self.add_message("system", "SOFIA initialized with full tool support! 🤖")
         except Exception as e:
             self.add_message("system", f"Error initializing SOFIA: {e}")
+            self.brain = None
 
     def add_message(self, sender, message):
         timestamp = datetime.now().strftime("%H:%M")
@@ -384,13 +415,31 @@ class TransparentChatWindow(QWidget):
             self.add_message("user", message)
             self.input_field.clear()
 
-            # Process in thread
-            self.analysis_thread = AnalysisThread(message, self.current_screenshot)
-            self.analysis_thread.response_received.connect(lambda response: self.add_message("sofia", response))
+            # Process in thread with full context
+            self.analysis_thread = AnalysisThread(
+                message, 
+                self.current_screenshot,
+                brain=self.brain,
+                chat_messages=self.chat_messages,
+                tools=self.config.get('tools', [])
+            )
+            self.analysis_thread.response_received.connect(self.handle_response)
             self.analysis_thread.start()
 
             # Clear screenshot after use
             self.current_screenshot = None
+
+    def handle_response(self, response):
+        """Handle response and update conversation history"""
+        self.add_message("sofia", response)
+        
+        # Update conversation history
+        if self.chat_messages:
+            # Add the assistant's response to history
+            self.chat_messages.append({
+                "role": "assistant", 
+                "content": response
+            })
 
     def take_screenshot(self):
         self.setWindowOpacity(0.1)  # Almost invisible
@@ -451,12 +500,23 @@ class TransparentChatWindow(QWidget):
 
             # Analyze the transcription
             prompt = f"I just recorded this audio: '{text}'. Please summarize the key points and answer any questions mentioned."
-            self.analysis_thread = AnalysisThread(prompt)
-            self.analysis_thread.response_received.connect(lambda response: self.add_message("sofia2", response))
+            self.analysis_thread = AnalysisThread(
+                prompt,
+                brain=self.brain,
+                chat_messages=self.chat_messages,
+                tools=self.config.get('tools', [])
+            )
+            self.analysis_thread.response_received.connect(self.handle_response)
             self.analysis_thread.start()
 
     def clear_chat(self):
         self.chat_display.clear()
+        # Reset conversation history to initial system messages
+        try:
+            messages, tools = load_config()
+            self.chat_messages = messages.copy()
+        except Exception as e:
+            self.chat_messages = []
         self.add_message("system", "Chat cleared. Ready for new conversation!")
 
     def toggle_visibility(self):
@@ -482,7 +542,7 @@ class TransparentChatWindow(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    app.setQuitOnLastWindowClosed(True)
 
     window = TransparentChatWindow()
     window.show()

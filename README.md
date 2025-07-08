@@ -24,6 +24,11 @@
 - **Command Execution** - Run system commands safely through natural language
 - **Sandboxed Environment** - All operations are contained within `/home/alex/SOFIA/` for security
 
+### 🎙️ Voice Interface (In Progress)
+- **Push-to-Talk** - Hands-free interaction using speech recognition
+- **Natural TTS** - SOFIA responds with synthesized speech
+- **Audio Recording** - Voice input support (currently being refined)
+
 ## 🚀 Getting Started
 
 ### Prerequisites
