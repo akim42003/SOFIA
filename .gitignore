@@ -1,17 +1,156 @@
-#.gitignore
+# Environment and configuration files
 .env
 .ropeproject
+credentials.json
+token.json
+*secret*
+*api_key*
+*.key
+*.pem
+*.p12
+*.jks
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+
+# Gradio and ML framework cache
+.gradio/
+.streamlit/
+wandb/
+mlruns/
+
+# Model weights and data directories
 /OmniParser
 /whisper
 /weights
 /outputs
 /inputs
-
-credentials.json
-
-token.json
-
-/__pycache__
 /content
 
+# Model files (large binaries)
+*.pt
+*.pth
+*.ckpt
+*.model
+*.safetensors
+*.bin
+*.h5
+
+# Cache directories
+.cache/
+*.cache/
+.huggingface/
+.transformers/
+
+# Temporary and backup files
+*.tmp
+*.temp
+*_backup.py
+transparent_backup.py
+*.pkl
+*.pickle
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+logs/
+*.out
+
+# Audio and media temporary files
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.wmv
+/tmp/
+temp/
+
+# Screenshot temporary files
+region_*.png
+screenshot_*.png
+capture_*.png
+screen_*.png
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.conda/
+conda-meta/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Documentation build
+docs/_build/
+site/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+pytest-results/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Development notes and planning
 RESTRUCTURING_PLAN.md
+TODO.md
+NOTES.md
+*.md.backup
+
+# AI/ML specific
+runs/
+experiments/
+checkpoints/
+saved_models/
+tensorboard_logs/

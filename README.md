@@ -2,7 +2,7 @@
 
 🤖 **SOFIA** is a *sometimes* powerful AI assistant that bridges the gap between large language models and your desktop, enabling seamless automation of tasks through natural language conversations.
 
-## ✨ Features
+## ✨ Overview
 
 ### 🧠 Augmented Chat System
 - **Multimodal Conversations** - Chat with text and images through an intuitive Gradio interface
@@ -41,7 +41,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/SOFIA.git
+   git clone https://github.com/akim42003/SOFIA.git
    cd SOFIA
    ```
 
@@ -58,7 +58,7 @@
 
 4. **Build the SOFIA model**
    ```bash
-   ollama create sofia -f Modelfile
+   ollama create sofia -f Modelfile.enhanced
    ```
 
 5. **Set up Gmail integration (optional)**
@@ -78,47 +78,32 @@ Then open your browser to `http://localhost:7860`
 #### Desktop Interface
 ```bash
 python sofia_desktop.py       # Invisible floating assistant
-python sofia_transparent.py   # Transparent chat window
 ```
 
-#### Voice Interface
-```bash
-python sofia_voice.py
-```
+## 🤖 Agent Features
 
-## 📁 Project Structure
+### **Computer Vision & UI Understanding**
+- **Advanced Screenshot Analysis**: Automatically captures and analyzes screen content with significant noise reduction
+- **Smart UI Element Detection**: Identifies buttons, icons, text fields, and interactive elements with precise pixel coordinates
+- **Region-Based Analysis (Desktop Only)**: Select specific screen areas for focused analysis
+- **LLM-Optimized Vision**: Structured, clean output format specifically designed for agent comprehension
 
-```
-SOFIA/
-├── sofia/                    # Main package
-│   ├── core/                 # Core functionality
-│   │   ├── brain.py          # Central orchestration logic
-│   │   └── tools/            # Tool implementations
-│   │       ├── system.py     # File and command operations
-│   │       └── desktop.py    # Desktop automation
-│   ├── vision/               # Computer vision
-│   │   ├── omniparser.py     # OmniParser for UI understanding
-│   │   ├── utils.py          # YOLO, OCR, and captioning
-│   │   └── box_annotator.py  # UI element visualization
-│   ├── ui/                   # User interfaces
-│   │   ├── web/              # Web interfaces
-│   │   │   └── gradio_app.py # Gradio web interface
-│   │   ├── desktop/          # Desktop interfaces
-│   │   │   ├── invisible.py  # Floating assistant
-│   │   │   └── transparent.py # Transparent chat
-│   │   ├── voice/            # Voice interfaces
-│   │   │   └── assistant.py  # Voice assistant
-│   │   └── widgets/          # Reusable UI components
-│   └── integrations/         # External service integrations
-│       └── gmail/            # Gmail integration
-│           ├── server.py     # Gmail MCP server
-│           └── client.py     # Gmail client wrapper
-├── config/                   # Configuration files
-│   ├── tools.yaml           # Tool configurations and prompts
-│   └── Modelfile            # Ollama model configuration
-├── scripts/                  # Utilities and scripts
-└── sofia_*.py               # Entry point scripts
-```
+### **Desktop Automation**
+- **Reliable Mouse Control**: Validated coordinate-based clicking with error handling and position verification
+- **Intelligent Keyboard Input**: Text typing with time delay for UI responsiveness
+- **Hotkey Management**: Complex key combinations for advanced system interactions
+
+### **Autonomous Agent Workflow**
+- **Built-in Planning**: Every task includes mandatory THINK → PLAN → EXECUTE → VERIFY workflow
+- **Tool Orchestration**: Intelligent sequencing of multiple tools to complete complex tasks
+- **Self-Verification**: Automatically takes screenshots and analyzes results to confirm task completion
+
+
+### **Vision System Optimization**
+- **Noise Filtering**: Removes irrelevant UI elements while preserving all interactive components
+- **Smart Prioritization**: Organizes screen elements by importance and interactability
+- **Relative Positioning**: Human-readable location descriptions (top-left, center, etc.)
+- **Element Classification**: Distinguishes between text, buttons, icons, and input fields
 
 ## 🔧 Configuration
 
