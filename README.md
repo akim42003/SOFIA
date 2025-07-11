@@ -167,3 +167,5 @@ ollama:
 - Sensitive credentials are stored securely using system keyrings
 
 **Note**: SOFIA is designed for personal automation and productivity. Always ensure you understand what commands SOFIA will execute before confirming actions.
+
+Built out of curiosity by Alex Kim.
