@@ -36,7 +36,7 @@
 - Conda (recommended for virtual environment)
 - For local AI: Ollama installed and running with CUDA-capable GPU
 - For cloud AI: OpenAI API key
-- **seperate monitors for web app and computer use environment highly suggested**
+- seperate monitors for web app and computer use environment highly suggested
 
 ### Installation
 
