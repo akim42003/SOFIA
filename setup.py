@@ -7,6 +7,8 @@ Configures user-specific settings for the SOFIA AI assistant
 import os
 import yaml
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 def get_user_config():
@@ -100,6 +102,110 @@ def update_modelfiles(user_config):
             f.write(content)
         print(f"Updated Modelfile with your name: {user_config['user_name']}")
 
+def check_and_install_huggingface_cli():
+    """Check if huggingface-cli is installed, install if not"""
+    try:
+        subprocess.run(["huggingface-cli", "--version"], capture_output=True, check=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("Installing huggingface_hub for model downloads...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "huggingface_hub"], check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Error installing huggingface_hub: {e}")
+            return False
+
+def download_omniparser_weights():
+    """Download OmniParser model weights from Hugging Face"""
+    print("\n=== Checking OmniParser Model Weights ===")
+    
+    # Define paths relative to SOFIA directory
+    sofia_dir = Path.home() / "SOFIA"
+    weights_dir = sofia_dir / "weights"
+    icon_detect_dir = weights_dir / "icon_detect"
+    icon_caption_dir = weights_dir / "icon_caption_florence"
+    
+    # Check if weights already exist
+    required_files = [
+        icon_detect_dir / "model.pt",
+        icon_detect_dir / "train_args.yaml", 
+        icon_detect_dir / "model.yaml",
+        icon_caption_dir / "config.json",
+        icon_caption_dir / "generation_config.json",
+        icon_caption_dir / "model.safetensors"
+    ]
+    
+    if all(f.exists() for f in required_files):
+        print("✓ OmniParser weights already present")
+        return True
+    
+    print("OmniParser weights not found. Downloading from Hugging Face...")
+    
+    # Ensure huggingface-cli is available
+    if not check_and_install_huggingface_cli():
+        print("✗ Failed to install huggingface_hub. Please install it manually:")
+        print("  pip install huggingface_hub")
+        return False
+    
+    # Create weights directory
+    weights_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Clean up any existing incomplete downloads
+    import shutil
+    for dir_to_clean in [icon_detect_dir, weights_dir / "icon_caption", icon_caption_dir]:
+        if dir_to_clean.exists():
+            shutil.rmtree(dir_to_clean)
+    
+    try:
+        # Change to SOFIA directory for download
+        original_cwd = os.getcwd()
+        os.chdir(sofia_dir)
+        
+        # Download the specific files using the GitHub recommended approach
+        files_to_download = [
+            "icon_detect/train_args.yaml",
+            "icon_detect/model.pt", 
+            "icon_detect/model.yaml",
+            "icon_caption/config.json",
+            "icon_caption/generation_config.json", 
+            "icon_caption/model.safetensors"
+        ]
+        
+        for file_path in files_to_download:
+            print(f"Downloading {file_path}...")
+            result = subprocess.run([
+                "huggingface-cli", "download", 
+                "microsoft/OmniParser-v2.0",
+                file_path,
+                "--local-dir", "weights"
+            ], capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"Error downloading {file_path}: {result.stderr}")
+                return False
+        
+        # Rename icon_caption to icon_caption_florence as expected by SOFIA
+        icon_caption_temp = weights_dir / "icon_caption"
+        if icon_caption_temp.exists():
+            icon_caption_temp.rename(icon_caption_dir)
+            print("✓ Renamed icon_caption to icon_caption_florence")
+        
+        # Verify all files downloaded successfully
+        if all(f.exists() for f in required_files):
+            print("✓ OmniParser weights successfully downloaded and configured")
+            return True
+        else:
+            missing_files = [str(f) for f in required_files if not f.exists()]
+            print(f"✗ Missing files after download: {missing_files}")
+            return False
+            
+    except Exception as e:
+        print(f"✗ Error downloading OmniParser weights: {e}")
+        return False
+    finally:
+        os.chdir(original_cwd)
+
 def create_env_template():
     """Create .env template file"""
     env_template = Path.home() / "SOFIA" / ".env.template"
@@ -132,6 +238,9 @@ def main():
         update_tools_config(user_config)
         update_modelfiles(user_config)
         
+        # Download OmniParser weights
+        weights_success = download_omniparser_weights()
+        
         # Create .env template
         create_env_template()
         
@@ -139,14 +248,23 @@ def main():
         print(f"✓ User configuration saved")
         print(f"✓ Tools configuration updated")
         print(f"✓ Modelfiles updated")
+        if weights_success:
+            print(f"✓ OmniParser weights downloaded")
+        else:
+            print(f"⚠ OmniParser weights download failed - vision features may not work")
         print(f"✓ Environment template created")
         print(f"\nYour SOFIA assistant is now configured for: {user_config['user_name']}")
         print(f"SOFIA directory: {Path.home() / 'SOFIA'}")
         
         print("\nNext steps:")
         print("1. Copy .env.template to .env and add your API keys")
-        print("2. Run 'python -m sofia.ui.web.gradio_app' to start the web interface")
-        print("3. Or run 'python -m sofia.ui.desktop.main' for the desktop app")
+        if not weights_success:
+            print("2. Manually download OmniParser weights or run setup again")
+            print("3. Run 'python -m sofia.ui.web.gradio_app' to start the web interface")
+            print("4. Or run 'python -m sofia.ui.desktop.main' for the desktop app")
+        else:
+            print("2. Run 'python -m sofia.ui.web.gradio_app' to start the web interface")
+            print("3. Or run 'python -m sofia.ui.desktop.main' for the desktop app")
         
     except KeyboardInterrupt:
         print("\nSetup cancelled.")
