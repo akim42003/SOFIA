@@ -119,7 +119,7 @@ SOFIA now supports both local and cloud AI backends:
 - Requires a CUDA-capable GPU
 - No API costs
 - Full privacy - data never leaves your machine
-- **mistral-small3.1:24b or llama4 highly suggested as the base model**
+- mistral-small3.1:24b or llama4 highly suggested as the base model
 
 ### **Cloud AI (OpenAI)**
 - No GPU required - perfect for users without robust PC setups
