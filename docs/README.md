@@ -63,7 +63,7 @@ All documentation follows these principles:
 - **SOFIA Version**: 2.0.0
 - **Documentation Last Updated**: 2025-01-11
 - **Python Version**: 3.7+
-- **Supported Platforms**: Linux, macOS
+- **Supported Platforms**: Linux, macOS (in development)
 
 ---
 
