@@ -87,11 +87,15 @@ python sofia_desktop.py       # Invisible floating assistant
 - **Smart UI Element Detection**: Identifies buttons, icons, text fields, and interactive elements with precise pixel coordinates
 - **Region-Based Analysis (Desktop Only)**: Select specific screen areas for focused analysis
 - **LLM-Optimized Vision**: Structured, clean output format specifically designed for agent comprehension
+- **Intelligent File Management**: Automatic cleanup of temporary screenshot files prevents system bloat
+- **Memory-Optimized Processing**: Debounce protection and message history management for sustained performance
 
 ### **Desktop Automation**
 - **Reliable Mouse Control**: Validated coordinate-based clicking with error handling and position verification
-- **Intelligent Keyboard Input**: Text typing with time delay for UI responsiveness
+- **Intelligent Keyboard Input**: Text typing with optimized timing for UI responsiveness
 - **Hotkey Management**: Complex key combinations for advanced system interactions
+- **Optimized Performance**: Reduced wait times and intelligent cooldowns for faster execution
+- **Race Condition Prevention**: Smart debouncing prevents conflicts between manual and automatic screenshots
 
 ### **Autonomous Agent Workflow**
 - **Built-in Planning**: Every task includes mandatory THINK → PLAN → EXECUTE → VERIFY workflow

@@ -1,4 +1,4 @@
-ai_backend: ollama
+ai_backend: openai
 openai:
   model: gpt-4o
 ollama:

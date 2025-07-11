@@ -26,6 +26,7 @@ Complete technical documentation for the SOFIA (Sort of Functional Interactive A
 - **[System Tools](system-tools.md)** - File operations and command execution
 - **[Gmail Integration](gmail-integration.md)** - Email management capabilities
 - **[Vision Processing](vision-processing.md)** - Image analysis with OmniParser
+- **[Screenshot Optimization](screenshot-optimization.md)** - Performance improvements and memory management
 
 ### Configuration & Deployment
 - **[Configuration Management](configuration.md)** - Settings and customization

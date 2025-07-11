@@ -9,6 +9,40 @@ messages = []
 tools = []
 backend = "ollama"
 
+# Memory management settings
+MAX_SCREENSHOT_MESSAGES = 5  # Keep max 5 screenshot messages in memory
+MAX_TOTAL_MESSAGES = 50      # Keep max 50 total messages in memory
+
+def cleanup_old_messages():
+    """Clean up old messages to prevent memory accumulation"""
+    global messages
+    
+    # First, clean up excess screenshot messages
+    screenshot_count = 0
+    cleaned_messages = []
+    
+    # Process messages in reverse order to keep the most recent screenshots
+    for msg in reversed(messages):
+        if msg.get('role') == 'assistant' and msg.get('images'):
+            if screenshot_count < MAX_SCREENSHOT_MESSAGES:
+                cleaned_messages.insert(0, msg)
+                screenshot_count += 1
+            # Skip older screenshot messages
+        elif msg.get('role') == 'tool' and msg.get('name') == 'take_screenshot':
+            if screenshot_count < MAX_SCREENSHOT_MESSAGES:
+                cleaned_messages.insert(0, msg)
+                # Don't increment counter for tool messages, only for image messages
+            # Skip older screenshot tool messages
+        else:
+            cleaned_messages.insert(0, msg)
+    
+    # Then, limit total message count
+    if len(cleaned_messages) > MAX_TOTAL_MESSAGES:
+        # Keep the most recent messages
+        cleaned_messages = cleaned_messages[-MAX_TOTAL_MESSAGES:]
+    
+    messages = cleaned_messages
+
 
 def respond(msg, _):
     global tools  # Declare global before using
@@ -19,6 +53,9 @@ def respond(msg, _):
     if files:
         entry["images"] = files
     messages.append(entry)
+    
+    # Clean up old messages before processing to manage memory
+    cleanup_old_messages()
 
     # Debug: Ensure tools are available
     if not tools:
@@ -109,29 +146,8 @@ def respond(msg, _):
 
                     brain.execute_tool_calls(tool_objects, messages)
 
-                    # Check if any desktop-related tools were called
-                    desktop_tools = {"move_mouse", "click_mouse", "drag_mouse", "type_text", "press_key", "hotkey"}
-                    has_desktop_actions = any(tc['function']['name'] in desktop_tools for tc in tool_calls)
-
-                    if has_desktop_actions:
-                        # Automatically take a screenshot for verification
-                        screenshot_result = brain.available_functions["take_screenshot"]()
-                        messages.append({
-                            "role": "tool",
-                            "content": str(screenshot_result),
-                            "name": "take_screenshot"
-                        })
-
-                        # Process screenshot if successful
-                        path = screenshot_result.get("path")
-                        if path and os.path.exists(path):
-                            from sofia.vision.omniparser import process_image
-                            image_content = process_image(path)
-                            messages.append({
-                                "role": "assistant",
-                                "content": image_content,
-                                "images": [path]
-                            })
+                    # OpenAI brain handles screenshot processing automatically
+                    # No need for additional screenshot logic here
 
                     # Continue to next iteration for follow-up response
                     full_response += "\n\n"
@@ -188,26 +204,36 @@ def respond(msg, _):
                 # Check if any desktop-related tools were called and automatically take a screenshot
                 desktop_tools = {"move_mouse", "click_mouse", "drag_mouse", "type_text", "press_key", "hotkey"}
                 has_desktop_actions = any(tool.function.name in desktop_tools for tool in tool_calls)
+                has_explicit_screenshot = any(tool.function.name == "take_screenshot" for tool in tool_calls)
 
-                if has_desktop_actions:
+                if has_desktop_actions and not has_explicit_screenshot:
                     try:
-                        # Automatically take a screenshot for verification
+                        # Automatically take a screenshot for verification only if none was explicitly requested
                         screenshot_result = brain.available_functions["take_screenshot"]()
-                        messages.append({
-                            "role": "tool",
-                            "content": str(screenshot_result),
-                            "name": "take_screenshot"
-                        })
+                        
+                        # Only proceed if screenshot was successful and not debounced
+                        if screenshot_result.get("status") != "error" and screenshot_result.get("status") != "debounced":
+                            messages.append({
+                                "role": "tool",
+                                "content": str(screenshot_result),
+                                "name": "take_screenshot"
+                            })
 
-                        # Process screenshot if successful
-                        path = screenshot_result.get("path")
-                        if path and os.path.exists(path):
-                            # For Ollama, skip OmniParser processing to avoid failures
-                            # Just add the screenshot without detailed analysis
+                            # Process screenshot if successful
+                            path = screenshot_result.get("path")
+                            if path and os.path.exists(path):
+                                # For Ollama, skip OmniParser processing to avoid failures
+                                # Just add the screenshot without detailed analysis
+                                messages.append({
+                                    "role": "assistant",
+                                    "content": "Desktop action completed - screenshot taken for verification.",
+                                    "images": [path]
+                                })
+                        elif screenshot_result.get("status") == "debounced":
+                            # Screenshot was debounced, mention this without adding duplicate
                             messages.append({
                                 "role": "assistant",
-                                "content": "Desktop action completed - screenshot taken for verification.",
-                                "images": [path]
+                                "content": "Desktop action completed - recent screenshot available."
                             })
                             
                     except Exception as screenshot_error:

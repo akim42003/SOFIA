@@ -2,6 +2,7 @@ from ollama import ChatResponse, chat
 import json
 import os
 import yaml
+import time
 from sofia.core.tools.system import save_file, read_file, execute_command, reset_google_cred
 from sofia.integrations.gmail.client import fetch_gmail, gmail_search_emails, send_gmail
 from sofia.vision.omniparser import process_image
@@ -40,11 +41,48 @@ class ChatBrain:
             "type_text": type_text,
             "press_key": press_key,
             "hotkey": hotkey,
-}
+        }
+        
+        # Memory management settings
+        self.MAX_SCREENSHOT_MESSAGES = 5
+        self.MAX_TOTAL_MESSAGES = 50
+
+    def cleanup_old_messages(self, messages):
+        """Clean up old messages to prevent memory accumulation"""
+        # First, clean up excess screenshot messages
+        screenshot_count = 0
+        cleaned_messages = []
+        
+        # Process messages in reverse order to keep the most recent screenshots
+        for msg in reversed(messages):
+            if msg.get('role') == 'assistant' and msg.get('images'):
+                if screenshot_count < self.MAX_SCREENSHOT_MESSAGES:
+                    cleaned_messages.insert(0, msg)
+                    screenshot_count += 1
+                # Skip older screenshot messages
+            elif msg.get('role') == 'tool' and msg.get('name') == 'take_screenshot':
+                if screenshot_count < self.MAX_SCREENSHOT_MESSAGES:
+                    cleaned_messages.insert(0, msg)
+                    # Don't increment counter for tool messages, only for image messages
+                # Skip older screenshot tool messages
+            else:
+                cleaned_messages.insert(0, msg)
+        
+        # Then, limit total message count
+        if len(cleaned_messages) > self.MAX_TOTAL_MESSAGES:
+            # Keep the most recent messages
+            cleaned_messages = cleaned_messages[-self.MAX_TOTAL_MESSAGES:]
+        
+        return cleaned_messages
 
     def execute_tool_calls(self, response, messages):
         executed = False
-        for tool in response.message.tool_calls:
+        
+        for i, tool in enumerate(response.message.tool_calls):
+            # Add cooldown between tools (except for first tool)
+            if i > 0:
+                time.sleep(0.3)  # Reduced cooldown for better responsiveness
+                
             tool_name = tool.function.name
             args = tool.function.arguments
             if isinstance(args, str):
@@ -66,6 +104,12 @@ class ChatBrain:
                         "name": tool_name,
                     })
                     executed = True
+                    
+                    # Add brief delay after resource-intensive operations
+                    if tool_name in ["take_screenshot", "move_mouse", "click_mouse", "drag_mouse"]:
+                        time.sleep(0.1)
+                    
+                    # Handle screenshot processing
                     if tool_name == "take_screenshot":
                         path = output.get("path")
                         if path and os.path.exists(path):
@@ -91,6 +135,11 @@ class ChatBrain:
     def continuous_chat(self, messages, tools):
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
+        
+        # Clean up old messages before processing to manage memory
+        cleaned_messages = self.cleanup_old_messages(messages)
+        messages[:] = cleaned_messages  # Update messages list in place
+        
         response: ChatResponse = self.chat(
             "sofia2",
             messages=messages,

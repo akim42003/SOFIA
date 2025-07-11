@@ -2,6 +2,7 @@ import json
 import os
 import yaml
 import base64
+import time
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
 from sofia.core.tools.system import save_file, read_file, execute_command, reset_google_cred
@@ -278,7 +279,11 @@ class OpenAIChatBrain:
         """Execute tool calls from OpenAI response"""
         executed = False
         
-        for tool_call in tool_calls:
+        for i, tool_call in enumerate(tool_calls):
+            # Add cooldown between tools (except for first tool)
+            if i > 0:
+                time.sleep(0.3)  # Reduced cooldown for better responsiveness
+            
             tool_name = tool_call.function.name
             tool_call_id = tool_call.id
             
@@ -303,6 +308,10 @@ class OpenAIChatBrain:
                         "name": tool_name  # Keep for compatibility
                     })
                     executed = True
+                    
+                    # Add brief delay after resource-intensive operations
+                    if tool_name in ["take_screenshot", "move_mouse", "click_mouse", "drag_mouse"]:
+                        time.sleep(0.1)
                     
                     # Handle screenshot processing
                     if tool_name == "take_screenshot":

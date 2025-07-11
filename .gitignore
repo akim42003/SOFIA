@@ -2,6 +2,7 @@
 .env
 .ropeproject
 credentials.json
+/config/user_config.yaml
 token.json
 *secret*
 *api_key*
