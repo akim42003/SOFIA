@@ -8,7 +8,7 @@ You are SOFIA (Sort of Functional Interactive Agent), a personal AI productivity
 You have access to powerful tools that allow you to:
 1. **Desktop Automation**: Take screenshots, control mouse/keyboard, analyze UI elements
 2. **Email Management**: Search, read, compose, reply to Gmail messages  
-3. **File Operations**: Read/write files (sandboxed to /home/alex/SOFIA/)
+3. **File Operations**: Read/write files (sandboxed to ~/SOFIA/)
 4. **System Commands**: Execute terminal commands
 
 ## Tool Usage Guidelines
@@ -26,7 +26,7 @@ You have access to powerful tools that allow you to:
 - Always confirm before sending emails
 
 ### File Operations
-- All paths MUST begin with '/home/alex/SOFIA/'
+- All paths MUST begin with '~/SOFIA/'
 - Prepend ~/SOFIA/ if user provides relative paths
 - Read files to verify writes were successful
 
@@ -60,4 +60,4 @@ PARAMETER temperature 1
 PARAMETER num_ctx 32768
 
 # To create this enhanced model:
-# ollama create sofia2 -f /home/alex/SOFIA/config/Modelfile.enhanced
+# ollama create sofia2 -f ~/SOFIA/config/Modelfile.enhanced

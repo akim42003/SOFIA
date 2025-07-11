@@ -7,7 +7,7 @@ from PIL import Image
 
 # Configure pyautogui for reliability
 pyautogui.FAILSAFE = False  # Disable failsafe for automated use
-pyautogui.PAUSE = 0.1       # Small pause between actions for stability
+pyautogui.PAUSE = 0.5       # Increased pause between actions for better stability
 
 def _validate_coordinates(x: int, y: int) -> tuple[bool, str]:
     """Validate that coordinates are within screen bounds"""
@@ -50,10 +50,10 @@ def move_mouse(x: int, y: int):
         current_x, current_y = pyautogui.position()
         
         # Move mouse
-        pyautogui.moveTo(x, y, duration=0.2)  # Smooth movement
+        pyautogui.moveTo(x, y, duration=0.5)  # Smoother, more reliable movement
         
         # Verify movement
-        time.sleep(0.1)  # Small delay to ensure position is updated
+        time.sleep(0.3)  # Increased delay to ensure position is updated
         new_x, new_y = pyautogui.position()
         
         if abs(new_x - x) <= 2 and abs(new_y - y) <= 2:  # Allow small tolerance
@@ -78,8 +78,8 @@ def click_mouse(button: str = "left"):
         # Perform click
         pyautogui.click(button=button)
         
-        # Small delay to allow UI to respond
-        time.sleep(0.2)
+        # Longer delay to allow UI to respond
+        time.sleep(0.5)
         
         return {"status": "clicked", "button": button, "position": (x, y)}
         
@@ -98,10 +98,10 @@ def drag_mouse(x: int, y: int, duration: float = 0.5):
         start_x, start_y = pyautogui.position()
         
         # Perform drag
-        pyautogui.dragTo(x, y, duration=duration)
+        pyautogui.dragTo(x, y, duration=max(duration, 0.8))  # Ensure minimum drag duration
         
         # Verify final position
-        time.sleep(0.1)
+        time.sleep(0.3)
         final_x, final_y = pyautogui.position()
         
         return {"status": "dragged", "from": (start_x, start_y), "to": (final_x, final_y), "duration": duration}
@@ -115,8 +115,8 @@ def type_text(text: str):
         if not text:
             return {"status": "error", "message": "No text provided to type"}
         
-        pyautogui.write(text, interval=0.05)  # Small interval between keystrokes for reliability
-        time.sleep(0.1)  # Allow UI to process
+        pyautogui.write(text, interval=0.1)  # Increased interval between keystrokes for reliability
+        time.sleep(0.3)  # Allow UI to process
         
         return {"status": "typed", "text": text, "length": len(text)}
         
@@ -131,7 +131,7 @@ def press_key(key: str):
         
         # Validate common keys (pyautogui will validate the rest)
         pyautogui.press(key)
-        time.sleep(0.1)  # Allow UI to process
+        time.sleep(0.3)  # Allow UI to process
         
         return {"status": "pressed", "key": key}
         
@@ -145,7 +145,7 @@ def hotkey(*keys: str):
             return {"status": "error", "message": "No keys provided for hotkey"}
         
         pyautogui.hotkey(*keys)
-        time.sleep(0.1)  # Allow UI to process
+        time.sleep(0.3)  # Allow UI to process
         
         return {"status": "hotkey", "keys": list(keys), "combination": "+".join(keys)}
         

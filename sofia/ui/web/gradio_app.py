@@ -1,17 +1,13 @@
 import gradio as gr
-from ollama import chat
-from sofia.core.brain import load_config, ChatBrain
+from sofia.core.brain_factory import get_brain_and_config, load_sofia_config
+from sofia.core.openai_brain import OpenAIChatBrain, convert_messages_to_openai_format, convert_tools_to_openai_format
 import os
 
-INITIAL_MESSAGES, TOOLS_SPEC = load_config("config/tools.yaml")
-messages = INITIAL_MESSAGES.copy()
-tools = TOOLS_SPEC.copy()
-brain = ChatBrain(chat)
-
-# Debug: Print tools format
-print(f"DEBUG: Loaded {len(tools)} tools")
-if tools and len(tools) > 0:
-    print(f"DEBUG: First tool structure: {tools[0]}")
+# Global variables that will be initialized in create_demo()
+brain = None
+messages = []
+tools = []
+backend = "ollama"
 
 
 def respond(msg, _):
@@ -28,7 +24,7 @@ def respond(msg, _):
     if not tools:
         print("WARNING: No tools loaded!")
         # Reload tools if empty
-        _, tools = load_config("config/tools.yaml")
+        _, _, tools = get_brain_and_config()
 
     MAX_ITERATIONS = 10  # Safety limit to prevent infinite loops
     iteration = 0
@@ -40,130 +36,242 @@ def respond(msg, _):
         has_tool_calls = False
         tool_calls = []  # Accumulate all tool calls
 
-        # Debug: Check if tools are being passed correctly
-        print(f"DEBUG: Calling chat with {len(tools)} tools, streaming=True")
-        stream = chat("sofia2", messages=messages, tools=tools, stream=True)
+        # Check if we're using OpenAI brain
+        if isinstance(brain, OpenAIChatBrain):
+            # Convert messages and tools to OpenAI format
+            openai_messages = convert_messages_to_openai_format(messages)
+            openai_tools = convert_tools_to_openai_format(tools)
 
-        for chunk in stream:
-            content = chunk["message"].get("content", "")
-            init_content += content
-            full_response += content
+            # Make API call with streaming
+            try:
+                stream = brain.client.chat.completions.create(
+                    model=brain.model,
+                    messages=openai_messages,
+                    tools=openai_tools if openai_tools else None,
+                    stream=True
+                )
 
-            # Debug logging
-            if content and "[TOOL_CALLS]" in content:
-                print(f"DEBUG: Found [TOOL_CALLS] in content: {content}")
+                for chunk in stream:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        init_content += delta.content
+                        full_response += delta.content
 
-            yield gr.ChatMessage(
-                role="assistant",
-                content=full_response,
-                metadata={"iteration": iteration} if iteration > 1 else None
-            )
+                        yield gr.ChatMessage(
+                            role="assistant",
+                            content=full_response,
+                            metadata={"iteration": iteration} if iteration > 1 else None
+                        )
 
-            # Accumulate tool calls instead of executing immediately
-            if chunk["message"].get("tool_calls"):
-                has_tool_calls = True
-                tool_calls.extend(chunk["message"]["tool_calls"])
-                print(f"DEBUG: Found tool_calls in chunk: {chunk['message']['tool_calls']}")
+                    # Accumulate tool calls
+                    if delta.tool_calls:
+                        has_tool_calls = True
+                        for tc in delta.tool_calls:
+                            if tc.index >= len(tool_calls):
+                                tool_calls.append({
+                                    "id": tc.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": tc.function.name if tc.function else None,
+                                        "arguments": tc.function.arguments if tc.function else ""
+                                    }
+                                })
+                            else:
+                                if tc.function and tc.function.arguments:
+                                    tool_calls[tc.index]["function"]["arguments"] += tc.function.arguments
 
-        # Execute all accumulated tool calls at once (in parallel)
-        if tool_calls:
-            yield gr.ChatMessage(
-                role="assistant",
-                content=f"{full_response}\n\n🛠️ Executing {len(tool_calls)} tool(s)..."
-            )
+                # Execute tool calls if any
+                if tool_calls:
+                    yield gr.ChatMessage(
+                        role="assistant",
+                        content=f"{full_response}\n\n🛠️ Executing {len(tool_calls)} tool(s)..."
+                    )
 
-            # Create a response-like object with all accumulated tool calls
-            class MockResponse:
-                class Message:
-                    def __init__(self, tool_calls):
-                        self.tool_calls = tool_calls
+                    # Add assistant message with tool calls
+                    messages.append({
+                        "role": "assistant",
+                        "content": init_content or "",
+                        "tool_calls": tool_calls
+                    })
 
-                def __init__(self, tool_calls):
-                    self.message = self.Message(tool_calls)
+                    # Convert tool calls to objects and execute
+                    tool_objects = []
+                    for tc in tool_calls:
+                        # Create a proper tool call object
+                        tool_obj = type('ToolCall', (), {
+                            'id': tc['id'],
+                            'function': type('Function', (), {
+                                'name': tc['function']['name'],
+                                'arguments': tc['function']['arguments']
+                            })()
+                        })()
+                        tool_objects.append(tool_obj)
 
-            combined_response = MockResponse(tool_calls)
-            brain.execute_tool_calls(combined_response, messages)
+                    brain.execute_tool_calls(tool_objects, messages)
 
-            # Check if any desktop-related tools were called and automatically take a screenshot
-            desktop_tools = {"move_mouse", "click_mouse", "drag_mouse", "type_text", "press_key", "hotkey"}
-            has_desktop_actions = any(tool.function.name in desktop_tools for tool in tool_calls)
+                    # Check if any desktop-related tools were called
+                    desktop_tools = {"move_mouse", "click_mouse", "drag_mouse", "type_text", "press_key", "hotkey"}
+                    has_desktop_actions = any(tc['function']['name'] in desktop_tools for tc in tool_calls)
 
-            if has_desktop_actions:
-                # Automatically take a screenshot for verification
-                screenshot_result = brain.available_functions["take_screenshot"]()
-                messages.append({
-                    "role": "tool",
-                    "content": str(screenshot_result),
-                    "name": "take_screenshot",
-                })
-
-                # Process the screenshot with vision
-                if screenshot_result and isinstance(screenshot_result, dict):
-                    path = screenshot_result.get("path")
-                    if path and os.path.exists(path):
-                        from sofia.vision.omniparser import process_image
-                        image_content = process_image(path)
+                    if has_desktop_actions:
+                        # Automatically take a screenshot for verification
+                        screenshot_result = brain.available_functions["take_screenshot"]()
                         messages.append({
-                            "role": "assistant",
-                            "content": image_content,
-                            "images": [path]
+                            "role": "tool",
+                            "content": str(screenshot_result),
+                            "name": "take_screenshot"
                         })
 
-        messages.append({"role": "assistant", "content": init_content})
+                        # Process screenshot if successful
+                        path = screenshot_result.get("path")
+                        if path and os.path.exists(path):
+                            from sofia.vision.omniparser import process_image
+                            image_content = process_image(path)
+                            messages.append({
+                                "role": "assistant",
+                                "content": image_content,
+                                "images": [path]
+                            })
 
-        # Exit if no tools were called (task likely complete)
+                    # Continue to next iteration for follow-up response
+                    full_response += "\n\n"
+                    continue
+
+            except Exception as e:
+                yield gr.ChatMessage(
+                    role="assistant",
+                    content=f"OpenAI Error: {str(e)}"
+                )
+                break
+
+        else:
+            # Use Ollama brain (existing logic)
+            from ollama import chat
+            stream = chat("sofia2", messages=messages, tools=tools, stream=True)
+
+            for chunk in stream:
+                content = chunk["message"].get("content", "")
+                init_content += content
+                full_response += content
+
+
+                yield gr.ChatMessage(
+                    role="assistant",
+                    content=full_response,
+                    metadata={"iteration": iteration} if iteration > 1 else None
+                )
+
+                # Accumulate tool calls instead of executing immediately
+                if chunk["message"].get("tool_calls"):
+                    has_tool_calls = True
+                    tool_calls.extend(chunk["message"]["tool_calls"])
+
+            # Execute all accumulated tool calls at once (in parallel)
+            if tool_calls:
+                yield gr.ChatMessage(
+                    role="assistant",
+                    content=f"{full_response}\n\n🛠️ Executing {len(tool_calls)} tool(s)..."
+                )
+
+                # Create a response-like object with all accumulated tool calls
+                class MockResponse:
+                    class Message:
+                        def __init__(self, tool_calls):
+                            self.tool_calls = tool_calls
+
+                    def __init__(self, tool_calls):
+                        self.message = self.Message(tool_calls)
+
+                combined_response = MockResponse(tool_calls)
+                brain.execute_tool_calls(combined_response, messages)
+
+                # Check if any desktop-related tools were called and automatically take a screenshot
+                desktop_tools = {"move_mouse", "click_mouse", "drag_mouse", "type_text", "press_key", "hotkey"}
+                has_desktop_actions = any(tool.function.name in desktop_tools for tool in tool_calls)
+
+                if has_desktop_actions:
+                    try:
+                        # Automatically take a screenshot for verification
+                        screenshot_result = brain.available_functions["take_screenshot"]()
+                        messages.append({
+                            "role": "tool",
+                            "content": str(screenshot_result),
+                            "name": "take_screenshot"
+                        })
+
+                        # Process screenshot if successful
+                        path = screenshot_result.get("path")
+                        if path and os.path.exists(path):
+                            # For Ollama, skip OmniParser processing to avoid failures
+                            # Just add the screenshot without detailed analysis
+                            messages.append({
+                                "role": "assistant",
+                                "content": "Desktop action completed - screenshot taken for verification.",
+                                "images": [path]
+                            })
+                            
+                    except Exception as screenshot_error:
+                        print(f"Error taking screenshot: {screenshot_error}")
+
+                # Continue to next iteration for follow-up response
+                full_response += "\n\n"
+                continue
+
+        # If no tool calls, we're done
         if not has_tool_calls:
+            if init_content:
+                messages.append({"role": "assistant", "content": init_content})
             break
 
-        # Add system prompt to encourage verification and continuation
-        verification_prompt = """
-        Tools executed successfully. For desktop actions, a screenshot has been automatically taken for verification. 
-        
-        ANALYZE the screenshot carefully and THINK about what you observe. 
-        
-        If the task is not complete, PLAN your next actions and continue with the appropriate tools. 
-        
-        If the task is complete and verified, provide a clear summary of what was accomplished.
-        """
-        
-        messages.append({
-            "role": "system",
-            "content": verification_prompt.strip()
-        })
+    return
 
-        # Check for explicit completion indicators (but only if they also indicate verification)
-        lower_content = init_content.lower()
-        completion_phrases = ["task complete", "task is complete", "completed the task", "all done", "successfully completed"]
-        verification_phrases = ["verified", "confirmed", "checked", "screenshot shows", "can see that", "successfully"]
 
-        # Only break if both completion AND verification are mentioned
-        has_completion = any(phrase in lower_content for phrase in completion_phrases)
-        has_verification = any(phrase in lower_content for phrase in verification_phrases)
+def create_demo():
+    """Create and return the Gradio demo interface"""
+    # Get brain instance and configuration
+    global brain, messages, tools, backend
+    brain, INITIAL_MESSAGES, TOOLS_SPEC = get_brain_and_config()
 
-        if has_completion and has_verification:
-            break
+    # Clean initial messages - remove any tool-related messages when starting fresh
+    cleaned_messages = []
+    for msg in INITIAL_MESSAGES:
+        if msg['role'] not in ['tool'] and not (msg['role'] == 'assistant' and 'tool_calls' in msg):
+            cleaned_messages.append(msg)
 
-    # Add iteration info if we did multiple rounds
-    if iteration > 1:
-        yield gr.ChatMessage(
-            role="assistant",
-            content=full_response,
-            metadata={"title": f"✅ Completed in {iteration} steps"}
-        )
+    messages = cleaned_messages.copy()
+    tools = TOOLS_SPEC.copy()
 
-with gr.Blocks() as demo:
-    chatbot = gr.Chatbot(messages, type="messages")
-    #gr.Radio(["Chat", "Agent"])
-    gr.ChatInterface(
+    # Determine which backend is being used
+    config = load_sofia_config()
+    backend = config.get('ai_backend', 'ollama')
+
+
+    demo = gr.ChatInterface(
         fn=respond,
-        chatbot=chatbot,
-        type="messages",
         multimodal=True,
-        title="🤖 Sofia Chat (Vision + Tooling)",
+        title=f"SOFIA Assistant ({backend.upper()} Backend)",
+        description=f"Sort of Functional Interactive Agent - Running on {backend.upper()}",
+        examples=[
+            {"text": "Show me the current time"},
+            {"text": "Take a screenshot and describe what you see"},
+            {"text": "Check my recent emails"},
+        ],
+        cache_examples=False,
     )
 
+    return demo
+
+
 def main():
-    demo.launch(server_name="0.0.0.0", server_port=7860, share = False)
+    """Main function to launch the Gradio app"""
+    demo = create_demo()
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        share=False,
+        quiet=False,
+    )
+
 
 if __name__ == "__main__":
     main()

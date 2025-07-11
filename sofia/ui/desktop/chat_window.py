@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QShortcut, QKeySequence
 
 from sofia.core.tools.desktop import take_screenshot
-from sofia.core.brain import ChatBrain, load_config
+from sofia.core.brain_factory import get_brain_and_config
 from sofia.ui.widgets.region_selector import RegionSelector
 from sofia.ui.desktop.audio_recorder import AudioRecorder
 from sofia.ui.desktop.analysis_thread import AnalysisThread
@@ -29,6 +29,8 @@ class TransparentChatWindow(QWidget):
         self.region_selector = None
         self.analysis_thread = None
         self.chat_messages = []  # Store conversation history
+        self.current_streaming_message = ""  # Track current streaming message
+        self.is_streaming = False  # Track if we're currently streaming
 
     def initUI(self):
         """Initialize the user interface"""
@@ -210,17 +212,19 @@ class TransparentChatWindow(QWidget):
     def initSOFIA(self):
         """Initialize SOFIA components"""
         try:
-            messages, tools = load_config()
+            # Get brain instance and configuration using factory
+            self.brain, messages, tools = get_brain_and_config()
             self.config = {"messages": messages, "tools": tools}
-            
-            # Initialize ChatBrain for tool execution
-            import ollama
-            self.brain = ChatBrain(ollama.chat)
             
             # Initialize conversation with system messages
             self.chat_messages = messages.copy()
             
-            self.add_message("system", "SOFIA initialized with full tool support! 🤖")
+            # Determine which backend is being used
+            from sofia.core.brain_factory import load_sofia_config
+            config = load_sofia_config()
+            backend = config.get('ai_backend', 'ollama')
+            
+            self.add_message("system", f"SOFIA initialized with {backend.upper()} backend! 🤖")
         except Exception as e:
             self.add_message("system", f"Error initializing SOFIA: {e}")
             self.brain = None
@@ -240,6 +244,57 @@ class TransparentChatWindow(QWidget):
         scrollbar = self.chat_display.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
+    def update_last_message(self, new_content):
+        """Update the last message in the chat display (for streaming)"""
+        try:
+            # Get the current cursor and document
+            cursor = self.chat_display.textCursor()
+            document = self.chat_display.document()
+            
+            # Move cursor to end of document
+            cursor.movePosition(cursor.MoveOperation.End)
+            
+            # Find the last line that contains "SOFIA:"
+            block = document.lastBlock()
+            sofia_block = None
+            
+            while block.isValid():
+                text = block.text()
+                if "SOFIA:" in text:
+                    sofia_block = block
+                    break
+                block = block.previous()
+            
+            if sofia_block:
+                # Select the entire block
+                cursor.setPosition(sofia_block.position())
+                cursor.movePosition(cursor.MoveOperation.EndOfBlock, cursor.MoveMode.KeepAnchor)
+                
+                # Extract the timestamp and prefix
+                original_text = sofia_block.text()
+                import re
+                match = re.match(r'(\[[^\]]+\] SOFIA:) .*', original_text)
+                if match:
+                    prefix = match.group(1)
+                    # Replace with new content
+                    cursor.insertHtml(f'<span style="color: #90ee90;">{prefix}</span> {new_content}')
+                else:
+                    # Fallback if pattern doesn't match
+                    timestamp = datetime.now().strftime("%H:%M")
+                    cursor.insertHtml(f'<span style="color: #90ee90;">[{timestamp}] SOFIA:</span> {new_content}')
+                
+                # Auto-scroll to bottom
+                scrollbar = self.chat_display.verticalScrollBar()
+                scrollbar.setValue(scrollbar.maximum())
+            else:
+                # No SOFIA message found, add new one
+                self.add_message("sofia", new_content)
+                
+        except Exception as e:
+            # Fallback: just add a new message if updating fails
+            print(f"Error updating message: {e}")
+            # Don't add another message, just skip the update
+
     def send_message(self):
         """Send a message to SOFIA"""
         message = self.input_field.text().strip()
@@ -255,23 +310,48 @@ class TransparentChatWindow(QWidget):
                 chat_messages=self.chat_messages,
                 tools=self.config.get('tools', [])
             )
+            self.analysis_thread.streaming_chunk.connect(self.handle_streaming_chunk)
+            self.analysis_thread.streaming_finished.connect(self.handle_streaming_finished)
             self.analysis_thread.response_received.connect(self.handle_response)
             self.analysis_thread.start()
 
             # Clear screenshot after use
             self.current_screenshot = None
 
-    def handle_response(self, response):
-        """Handle response and update conversation history"""
-        self.add_message("sofia", response)
+    def handle_streaming_chunk(self, chunk):
+        """Handle streaming chunk by accumulating it"""
+        if not self.is_streaming:
+            # First chunk - start streaming
+            self.is_streaming = True
+            self.current_streaming_message = chunk
+            self.add_message("sofia", chunk)
+        else:
+            # Subsequent chunk - update the existing message
+            self.current_streaming_message += chunk
+            self.update_last_message(self.current_streaming_message)
+
+    def handle_streaming_finished(self, full_response):
+        """Handle when streaming is complete"""
+        # Ensure the final message is complete
+        if self.current_streaming_message != full_response:
+            self.current_streaming_message = full_response
+            self.update_last_message(full_response)
         
         # Update conversation history
         if self.chat_messages:
             # Add the assistant's response to history
             self.chat_messages.append({
                 "role": "assistant", 
-                "content": response
+                "content": full_response
             })
+        
+        # Reset streaming state
+        self.current_streaming_message = ""
+        self.is_streaming = False
+
+    def handle_response(self, response):
+        """Handle non-streaming response (fallback for errors)"""
+        self.add_message("sofia", response)
 
     def take_screenshot(self):
         """Take a screenshot"""
@@ -344,6 +424,8 @@ class TransparentChatWindow(QWidget):
                 chat_messages=self.chat_messages,
                 tools=self.config.get('tools', [])
             )
+            self.analysis_thread.streaming_chunk.connect(self.handle_streaming_chunk)
+            self.analysis_thread.streaming_finished.connect(self.handle_streaming_finished)
             self.analysis_thread.response_received.connect(self.handle_response)
             self.analysis_thread.start()
 

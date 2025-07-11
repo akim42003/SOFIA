@@ -22,7 +22,7 @@
 ### 🛠️ System Tools
 - **File Operations** - Read, write, and manage files within the SOFIA directory
 - **Command Execution** - Run system commands safely through natural language
-- **Sandboxed Environment** - All operations are contained within `/home/alex/SOFIA/` for security
+- **Sandboxed Environment** - All operations are contained within `~/SOFIA/` for security
 
 ### 🎙️ Voice Interface (In Progress)
 - **Push-to-Talk** - Hands-free interaction using speech recognition
@@ -34,8 +34,8 @@
 ### Prerequisites
 - Python 3.11+
 - Conda (recommended for virtual environment)
-- Ollama installed and running
-- CUDA-capable GPU (requires running Ollama docker daemon on GPU)
+- For local AI: Ollama installed and running with CUDA-capable GPU
+- For cloud AI: OpenAI API key
 
 ### Installation
 
@@ -105,12 +105,54 @@ python sofia_desktop.py       # Invisible floating assistant
 - **Relative Positioning**: Human-readable location descriptions (top-left, center, etc.)
 - **Element Classification**: Distinguishes between text, buttons, icons, and input fields
 
+## 🌐 AI Backend Options
+
+SOFIA now supports both local and cloud AI backends:
+
+### **Local AI (Ollama)**
+- Runs completely offline on your machine
+- Requires a CUDA-capable GPU
+- No API costs
+- Full privacy - data never leaves your machine
+
+### **Cloud AI (OpenAI)**
+- No GPU required - perfect for users without robust PC setups
+- Access to latest GPT models (GPT-4, GPT-4o-mini)
+- Requires OpenAI API key and incurs usage costs
+- Faster response times for complex tasks
+
+### **Switching Backends**
+```bash
+# Check current backend
+python switch_backend.py status
+
+# Switch to OpenAI (cloud)
+export OPENAI_API_KEY='your-api-key'
+python switch_backend.py openai
+
+# Switch back to Ollama (local)
+python switch_backend.py ollama
+```
+
 ## 🔧 Configuration
 
-SOFIA's behavior and available tools are configured in `tools.yaml`. You can customize:
-- System prompts and personality
-- Available tools and their parameters
-- Model settings and constraints
+SOFIA's behavior and available tools are configured through:
+- `config/tools.yaml` - System prompts, personality, and available tools
+- `config/sofia_config.yaml` - AI backend selection and model settings
+
+### Configuration Files
+
+**sofia_config.yaml** - Controls AI backend:
+```yaml
+ai_backend: "ollama"  # or "openai"
+
+openai:
+  model: "gpt-4o"  # or "gpt-4", "gpt-3.5-turbo"
+  # api_key: "your-key"  # Optional, can use env var
+
+ollama:
+  model: "sofia2"
+```
 
 ## 🛡️ Security Notes
 

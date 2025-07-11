@@ -3,8 +3,11 @@ import os
 import subprocess
 
 def normalize_path(raw_path):
-    if not raw_path.startswith("/home/alex/SOFIA/"):
-        return f"/home/alex/SOFIA/{raw_path.lstrip('/')}"
+    # Get the user's home directory and create the SOFIA base path
+    sofia_base_path = os.path.expanduser("~/SOFIA/")
+    
+    if not raw_path.startswith(sofia_base_path):
+        return os.path.join(sofia_base_path, raw_path.lstrip('/'))
     return raw_path
 
 def save_file(path: str, content: str) -> str:
