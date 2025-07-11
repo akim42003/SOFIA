@@ -32,6 +32,7 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
+- Ubuntu 22.04 (macOS development in progress)
 - Python 3.11+
 - Conda (recommended for virtual environment)
 - For local AI: Ollama installed and running with CUDA-capable GPU
