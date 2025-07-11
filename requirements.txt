@@ -17,6 +17,9 @@ transformers
 ultralytics
 opencv-python
 Pillow
+supervision
+easyocr
+matplotlib
 
 # OCR
 paddlepaddle
