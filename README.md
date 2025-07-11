@@ -27,7 +27,7 @@
 ### 🎙️ Voice Interface (In Progress)
 - **Push-to-Talk** - Hands-free interaction using speech recognition
 - **Natural TTS** - SOFIA responds with synthesized speech
-- **Audio Recording** - Voice input support (currently being refined)
+- **Audio Recording** - Voice input support
 
 ## 🚀 Getting Started
 
@@ -118,12 +118,13 @@ SOFIA now supports both local and cloud AI backends:
 - Requires a CUDA-capable GPU
 - No API costs
 - Full privacy - data never leaves your machine
+- **mistral-small3.1:24b or llama4 highly suggested as the base model**
 
 ### **Cloud AI (OpenAI)**
 - No GPU required - perfect for users without robust PC setups
 - Access to latest GPT models (GPT-4, GPT-4o-mini)
 - Requires OpenAI API key and incurs usage costs
-- Faster response times for complex tasks
+- Faster, more accurate responses for complex tasks (especially computer use)
 
 ### **Switching Backends**
 ```bash
