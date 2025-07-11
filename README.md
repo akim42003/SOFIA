@@ -165,19 +165,4 @@ ollama:
 - Command execution is logged and can be restricted
 - Sensitive credentials are stored securely using system keyrings
 
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🔮 Future Roadmap
-
-- [ ] Enhanced computer vision with Gemma 3
-- [ ] Improved voice interface with advanced Whisper integration
-- [ ] Automated task reasoning and planning
-- [ ] Multi-monitor support
-- [ ] Browser automation integration
-- [ ] Plugin system for custom tools
-
-
 **Note**: SOFIA is designed for personal automation and productivity. Always ensure you understand what commands SOFIA will execute before confirming actions.
