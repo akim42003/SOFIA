@@ -38,6 +38,7 @@
 - For local AI: Ollama installed and running with CUDA-capable GPU
 - For cloud AI: OpenAI API key
 - Seperate monitors for web app and computer use environment highly suggested
+- CUDA-capable GPU for OmniParser OCR layer
 
 ### Installation
 
