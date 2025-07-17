@@ -72,6 +72,9 @@ class OpenAIChatBrain:
             \"type_text\": type_text,
             \"press_key\": press_key,
             \"hotkey\": hotkey,
+            \"save_conversation\": self._save_conversation_wrapper,
+            \"load_conversations\": load_conversations,
+            \"get_conversation_content\": get_conversation_content,
         }
 ```
 
@@ -431,6 +434,85 @@ def _process_screenshot_with_retry(self, output: Dict, messages: List[Dict]):
                 except:
                     pass
 ```
+
+## Conversation Management
+
+The OpenAI Brain includes comprehensive conversation management capabilities for saving, loading, and searching conversation summaries.
+
+### Conversation Saving
+
+```python
+def _save_conversation_wrapper(self, title: str = None, include_tools: bool = False) -> Dict:
+    \"\"\"
+    Save current conversation as a summarized markdown file
+    
+    Args:
+        title: Optional title for the conversation
+        include_tools: Whether to include tool call details
+    
+    Returns:
+        Dict with status and file path
+    \"\"\"
+    try:
+        if not self._current_messages:
+            return {
+                \"status\": \"error\",
+                \"message\": \"No conversation found to save\"
+            }
+        
+        # Summarize using OpenAI API
+        summary = _summarize_conversation(self._current_messages, self.client, self.model)
+        
+        # Save to ~/SOFIA/conversations/ directory
+        file_path = _save_markdown_file(summary, title)
+        
+        return {
+            \"status\": \"success\",
+            \"file_path\": file_path,
+            \"message\": f\"Conversation saved to {file_path}\"
+        }
+    except Exception as e:
+        return {\"status\": \"error\", \"message\": f\"Failed to save: {str(e)}\"}
+```
+
+### Conversation Loading
+
+```python
+# Load recent conversations
+load_conversations()  # Returns list of recent conversation summaries
+
+# Search conversations by content
+load_conversations(query=\"meetings\")  # Find conversations about meetings
+
+# Get full content of specific conversation
+get_conversation_content(filename=\"20240717_142030_meeting_notes.md\")
+```
+
+**Features:**
+- **Automatic summarization** using OpenAI API
+- **Intelligent search** across title, preview, and content
+- **Metadata extraction** (title, date, preview)
+- **Sorted by recency** for easy access
+- **Markdown format** for readable storage
+
+## Enhanced Calendar Tools
+
+The OpenAI Brain includes enhanced calendar functionality with natural language time parsing and intelligent querying.
+
+### Natural Language Time Parsing
+
+```python
+def parse_time_range(time_expression):
+    \"\"\"Parse time expressions like 'this week', 'next few days', etc.\"\"\"
+    # Supports expressions like:
+    # - \"this week\", \"next week\" 
+    # - \"next few days\", \"next 3 days\"
+    # - \"today\", \"tomorrow\"
+    # - \"this month\", \"current month\"
+    
+    # Returns (start_datetime, end_datetime)
+```
+
 
 ## Streaming Implementation
 

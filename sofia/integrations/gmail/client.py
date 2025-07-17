@@ -175,3 +175,4 @@ def calendar_delete_event(
                 }
             )
     return asyncio.run(_call())
+

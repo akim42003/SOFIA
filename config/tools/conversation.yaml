@@ -18,3 +18,39 @@ tools:
         type: object
         required: []
     type: function
+  - function:
+      description:
+        "Load and search through saved conversation summaries from the ~/SOFIA/conversations folder.
+        This function can retrieve previous conversations with optional filtering by search query.
+        Returns a list of conversation summaries with metadata like title, date, and preview.
+
+        "
+      name: load_conversations
+      parameters:
+        properties:
+          query:
+            description: "Optional search query to filter conversations by content (searches in title, preview, and full content)"
+            type: string
+          max_results:
+            description: "Maximum number of conversations to return. Default: 10"
+            type: integer
+            default: 10
+        type: object
+        required: []
+    type: function
+  - function:
+      description:
+        "Get the full content of a specific conversation file by filename.
+        Use this after load_conversations to retrieve the complete conversation summary.
+
+        "
+      name: get_conversation_content
+      parameters:
+        properties:
+          filename:
+            description: "Name of the conversation file to retrieve (e.g., '20240717_142030_meeting_notes.md')"
+            type: string
+        type: object
+        required:
+          - filename
+    type: function

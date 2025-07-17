@@ -1,5 +1,6 @@
 import os
 import json
+import glob
 from datetime import datetime
 from typing import List, Dict, Optional
 from openai import OpenAI
@@ -149,3 +150,149 @@ def _save_markdown_file(content: str, title: str = None) -> str:
         f.write(content)
     
     return file_path
+
+
+def load_conversations(query: str = None, max_results: int = 10) -> Dict:
+    """
+    Load and search through saved conversation summaries
+    
+    Args:
+        query: Optional search query to filter conversations by content
+        max_results: Maximum number of conversations to return
+        
+    Returns:
+        Dict with conversation summaries and metadata
+    """
+    try:
+        conversations_dir = os.path.expanduser("~/SOFIA/conversations")
+        
+        # Check if conversations directory exists
+        if not os.path.exists(conversations_dir):
+            return {
+                "status": "success",
+                "conversations": [],
+                "message": "No conversations directory found. No conversations have been saved yet."
+            }
+        
+        # Get all markdown files in conversations directory
+        pattern = os.path.join(conversations_dir, "*.md")
+        conversation_files = glob.glob(pattern)
+        
+        if not conversation_files:
+            return {
+                "status": "success", 
+                "conversations": [],
+                "message": "No conversation files found in the conversations directory."
+            }
+        
+        # Sort files by modification time (most recent first)
+        conversation_files.sort(key=os.path.getmtime, reverse=True)
+        
+        conversations = []
+        for file_path in conversation_files[:max_results * 2]:  # Load extra in case filtering removes some
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Extract metadata from filename and content
+                filename = os.path.basename(file_path)
+                modified_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                
+                # Parse title from filename (format: timestamp_title.md or conversation_timestamp.md)
+                if filename.startswith('conversation_'):
+                    title = "Untitled Conversation"
+                else:
+                    # Extract title from filename
+                    parts = filename.replace('.md', '').split('_', 1)
+                    if len(parts) > 1:
+                        title = parts[1].replace('_', ' ').title()
+                    else:
+                        title = "Untitled Conversation"
+                
+                # Extract preview from content (first few lines after headers)
+                lines = content.split('\n')
+                preview = ""
+                for line in lines[10:]:  # Skip metadata headers
+                    if line.strip() and not line.startswith('#') and not line.startswith('**') and not line.startswith('---'):
+                        preview = line.strip()[:200] + "..." if len(line.strip()) > 200 else line.strip()
+                        break
+                
+                conversation_data = {
+                    "filename": filename,
+                    "title": title,
+                    "date": modified_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "preview": preview,
+                    "file_path": file_path,
+                    "content": content if not query else content  # Include full content for searching
+                }
+                
+                # Filter by query if provided
+                if query:
+                    query_lower = query.lower()
+                    searchable_text = f"{title} {preview} {content}".lower()
+                    if query_lower in searchable_text:
+                        conversations.append(conversation_data)
+                else:
+                    conversations.append(conversation_data)
+                
+                # Stop if we have enough results
+                if len(conversations) >= max_results:
+                    break
+                    
+            except Exception as e:
+                # Skip files that can't be read
+                continue
+        
+        # Remove full content from response to keep it manageable
+        for conv in conversations:
+            conv.pop('content', None)
+        
+        return {
+            "status": "success",
+            "conversations": conversations,
+            "total_found": len(conversations),
+            "message": f"Found {len(conversations)} conversation(s)" + (f" matching '{query}'" if query else "")
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to load conversations: {str(e)}"
+        }
+
+
+def get_conversation_content(filename: str) -> Dict:
+    """
+    Get the full content of a specific conversation file
+    
+    Args:
+        filename: Name of the conversation file to retrieve
+        
+    Returns:
+        Dict with conversation content
+    """
+    try:
+        conversations_dir = os.path.expanduser("~/SOFIA/conversations")
+        file_path = os.path.join(conversations_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return {
+                "status": "error",
+                "message": f"Conversation file '{filename}' not found."
+            }
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        return {
+            "status": "success",
+            "filename": filename,
+            "content": content,
+            "message": f"Successfully loaded conversation '{filename}'"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to load conversation: {str(e)}"
+        }

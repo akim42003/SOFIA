@@ -2,6 +2,7 @@
 .env
 .ropeproject
 credentials.json
+/conversations/
 /config/user_config.yaml
 token.json
 calendar_token.json

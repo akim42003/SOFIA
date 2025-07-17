@@ -10,6 +10,7 @@ SOFIA operates through multiple interfaces (web, desktop overlay, and MCP server
 
 - **Desktop Automation**: Computer vision-powered UI element detection using OmniParser, precise mouse/keyboard control, screenshot analysis, and sandboxed shell command execution
 - **Email & Calendar Integration**: Full Gmail functionality (search, compose, reply, forward) and Google Calendar management through natural language with OAuth2 authentication
+- **Local Conversation Storage**: Compacts and stores past conversations as md files for future use and reference.
 - **Multimodal Processing**: Text and image chat support, audio file transcription via Whisper, real-time streaming responses, and drag-and-drop file handling
 - **Flexible AI Backend**: Hot-swappable between local Ollama models (privacy-focused, offline) and OpenAI API (faster, more accurate) via Brain Factory pattern
 - **Safety-First Design**: All file operations sandboxed to ~/SOFIA/ directory, parameter validation, graceful error handling, and secure API key management

@@ -18,7 +18,10 @@ messages:
       10. calendar_create_event - create new calendar events with smart time parsing
       11. calendar_search_events - search calendar events by text query
       12. calendar_delete_event - delete calendar events by event ID
-      13. save_conversation - save and summarize the current conversation as a markdown file
+      13. calendar_query_events - query calendar events using natural language with time context
+      14. save_conversation - save and summarize the current conversation as a markdown file
+      15. load_conversations - load and search through saved conversation summaries
+      16. get_conversation_content - retrieve the full content of a specific conversation file
 
       CRITICAL WORKFLOW: Before executing ANY tools, you MUST:
       1. **THINK** - Analyze the request and understand what needs to be accomplished

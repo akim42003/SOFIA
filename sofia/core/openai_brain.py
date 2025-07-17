@@ -17,7 +17,7 @@ from sofia.core.tools.desktop import (
     press_key,
     hotkey
 )
-from sofia.core.tools.conversation import _summarize_conversation, _save_markdown_file
+from sofia.core.tools.conversation import _summarize_conversation, _save_markdown_file, load_conversations, get_conversation_content
 
 
 def load_config(config_file='config/identity.yaml'):
@@ -294,6 +294,8 @@ class OpenAIChatBrain:
             "press_key": press_key,
             "hotkey": hotkey,
             "save_conversation": self._save_conversation_wrapper,
+            "load_conversations": load_conversations,
+            "get_conversation_content": get_conversation_content,
         }
         
         # Store current messages for conversation saving
