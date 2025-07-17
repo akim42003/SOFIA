@@ -1,19 +1,16 @@
 # SOFIA Documentation
 
-Complete technical documentation for the SOFIA (Sort of Functional Interactive Agent) AI assistant system.
+Technical documentation for SOFIA (Sort of Functional Interactive Agent) AI assistant.
 
-## Table of Contents
+## Contents
 
-### Core Documentation
-- **[Architecture Overview](architecture.md)** - System design and component relationships
-- **[Setup Guide](setup.md)** - Installation and configuration
+**Core System**
+- [Architecture](architecture.md) - System design and components
+- [Desktop App](desktop-app.md) - PyQt6 GUI interface
 
-### AI Brain System
-- **[Ollama Brain](ollama-brain.md)** - Local AI model implementation
-- **[OpenAI Brain](openai-brain.md)** - Cloud AI service integration
+**AI Backends**
+- [Ollama Brain](ollama-brain.md) - Local AI models
+- [OpenAI Brain](openai-brain.md) - Cloud AI integration
 
-### User Interfaces
-- **[Desktop Application](desktop-app.md)** - PyQt6 GUI implementation
-
-### Tools & Integrations
-- **[Screenshot Optimization](screenshot-optimization.md)** - Performance improvements and memory management
+**Performance**
+- [Screenshot Optimization](screenshot-optimization.md) - Memory and performance improvements

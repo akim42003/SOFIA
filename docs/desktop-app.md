@@ -1,10 +1,10 @@
 # Desktop Application
 
-The SOFIA Desktop Application provides a native GUI interface built with PyQt6, offering real-time AI interaction, drag-and-drop image support, and system integration capabilities.
+Native PyQt6 GUI for SOFIA with real-time streaming, drag-and-drop images, and desktop automation tools.
 
 ## Overview
 
-The desktop application (`sofia/ui/desktop/`) delivers a rich, responsive user experience with advanced features like streaming responses, background processing, and seamless tool execution visualization.
+The desktop app (`sofia/ui/desktop/`) provides streaming responses, background processing, and tool execution feedback.
 
 ## Architecture
 
