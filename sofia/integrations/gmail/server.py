@@ -60,30 +60,55 @@ def calendar_service():
 server = FastMCP("gmail-calendar-tools")   # Combined server
 
 
-def parse_date_with_current_month_default(date_string):
+def parse_date_with_current_month_default(date_string, start_of_day=False):
     """Parse date with preference for current month when ambiguous"""
     # Configure dateparser to prefer current month
     settings = {
         'PREFER_DATES_FROM': 'current_period',
         'PREFER_DAY_OF_MONTH': 'current'
     }
-    return dateparser.parse(date_string, settings=settings)
+    parsed = dateparser.parse(date_string, settings=settings)
+    
+    # For date-only queries like "today", "tomorrow", set to start of day
+    if parsed and start_of_day:
+        # Check if it's a date-only input (common words like today, tomorrow, etc.)
+        date_only_terms = ['today', 'tomorrow', 'yesterday', 'monday', 'tuesday', 'wednesday', 
+                          'thursday', 'friday', 'saturday', 'sunday', 'this week', 'next week']
+        if any(term in date_string.lower() for term in date_only_terms):
+            parsed = parsed.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    return parsed
 
 
 def format_datetime_local(dt):
     """Format datetime with local timezone handling"""
     if dt.tzinfo is None:
-        # If datetime is naive, assume it's in local timezone and add timezone info
-        # Get local timezone offset
-        local_offset = time.timezone if not time.daylight else time.altzone
-        # Convert to hours and minutes
-        offset_hours = -local_offset // 3600
-        offset_minutes = (-local_offset % 3600) // 60
-        # Format as ISO with timezone
+        # Convert to local time and check if DST is active for this specific datetime
+        timestamp = dt.timestamp()
+        local_time = time.localtime(timestamp)
+        
+        # Use the actual DST status for this specific time
+        if local_time.tm_isdst:
+            offset_seconds = time.altzone
+        else:
+            offset_seconds = time.timezone
+            
+        offset_hours = -offset_seconds // 3600
+        offset_minutes = (-offset_seconds % 3600) // 60
         tz_str = f"{offset_hours:+03d}:{offset_minutes:02d}"
         return dt.isoformat() + tz_str
     else:
         return dt.isoformat()
+
+
+def validate_datetime_string(dt_str):
+    """Validate that datetime string is in proper RFC3339 format"""
+    if not dt_str:
+        return False
+    
+    # Check for basic RFC3339 format: YYYY-MM-DDTHH:MM:SS[.fff][+/-HH:MM]
+    rfc3339_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$'
+    return bool(re.match(rfc3339_pattern, dt_str))
 
 @server.tool()
 def gmail_search_emails(
@@ -305,21 +330,36 @@ def calendar_list_events(
     try:
         service = calendar_service()
         
-        # Handle natural language dates with local timezone
+        # Handle natural language dates and datetime strings without timezone info
         if time_min:
-            if not time_min.endswith('Z') and 'T' not in time_min:
-                parsed_date = parse_date_with_current_month_default(time_min)
+            # Check if it's a natural language date OR a datetime string without timezone
+            if not validate_datetime_string(time_min):
+                parsed_date = parse_date_with_current_month_default(time_min, start_of_day=True)
                 if parsed_date:
                     time_min = format_datetime_local(parsed_date)
+                    # Validate the formatted datetime
+                    if not validate_datetime_string(time_min):
+                        time_min = format_datetime_local(datetime.now())
         else:
             # Default to now in local timezone
             time_min = format_datetime_local(datetime.now())
             
         if time_max:
-            if not time_max.endswith('Z') and 'T' not in time_max:
-                parsed_date = parse_date_with_current_month_default(time_max)
+            # Check if it's a natural language date OR a datetime string without timezone
+            if not validate_datetime_string(time_max):
+                # For time_max, we want end of day for date-only queries
+                parsed_date = parse_date_with_current_month_default(time_max, start_of_day=False)
                 if parsed_date:
+                    # If it's a date-only query, set to end of day
+                    date_only_terms = ['today', 'tomorrow', 'yesterday', 'monday', 'tuesday', 'wednesday', 
+                                      'thursday', 'friday', 'saturday', 'sunday', 'this week', 'next week']
+                    if any(term in time_max.lower() for term in date_only_terms):
+                        parsed_date = parsed_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    
                     time_max = format_datetime_local(parsed_date)
+                    # Validate the formatted datetime
+                    if not validate_datetime_string(time_max):
+                        time_max = None  # Let API use default end time
 
         events_result = service.events().list(
             calendarId=calendar_id,
