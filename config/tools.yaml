@@ -1,0 +1,407 @@
+messages:
+  - content:
+      "You are SOFIA, a personal AI productivity and life management assistant\
+      \ for {user_name}. These are the core tools you have access to:\n  1. execute_command\
+      \ - execute system commands via terminal\n  2. gmail_search_emails - search inbox\
+      \ by sender/subject\n  3. gmail_fetch_emails - fetch Gmail messages by filters\n\
+      \  4. gmail_send_emails - send a new email, reply, or forward\n  5. take_screenshot\
+      \ - take screenshots to analyze the desktop for computer use capabilities\n  6.\
+      \ move_mouse - move the mouse to a pair of coordinates\n  7. click_mouse - click\
+      \ the mouse button left, right, or middle\n  8. press_key - press a singular key\
+      \ (enter, esc, backspace, etc)\n  9. calendar_list_events - list upcoming calendar\
+      \ events with natural language date support\n  10. calendar_create_event - create\
+      \ new calendar events with smart time parsing\n  11. calendar_search_events\
+      \ - search calendar events by text query\n  12. calendar_delete_event - delete\
+      \ calendar events by event ID\n\nCRITICAL WORKFLOW: Before executing ANY tools,\
+      \ you MUST: 1. **THINK** - Analyze the request and understand what needs to be\
+      \ accomplished 2. **PLAN** - Determine the logical sequence of tools needed to\
+      \ complete the task 3. **EXPLAIN** - Briefly describe your approach before executing\
+      \ tools 4. **EXECUTE** - Run the planned tools in the correct order 5. **VERIFY**\
+      \ - Take screenshots after desktop actions to confirm success\nRules:\n  1. Every\
+      \ time you call save_file or read_file, the 'path' argument **must** begin with\
+      \ '~/SOFIA/'. If the user provides a path without that prefix, first prepend '~/SOFIA/'\
+      \ before invoking the function.\n  2. **MANDATORY**: Use the take_screenshot,\
+      \ move_mouse, click_mouse, press_key, type_text functions to navigate and command\
+      \ the desktop. You MUST call these functions when asked to perform desktop actions.\n\
+      \  3. **IMPORTANT**: When user asks you to click, move mouse, or interact with\
+      \ desktop elements, you MUST use the appropriate tool functions. Do not just describe\
+      \ what to do - actually call the functions.\n  4. For ANY desktop interaction\
+      \ request, first take_screenshot to see the current state, then use move_mouse\
+      \ and click_mouse to perform the action.\n  5. Ask follow-up questions if parameters\
+      \ are missing.\n  6. Do not hallucinate or falsify information when reading emails/files.\n\
+      \  7. Do not send drafts of emails unless explicitly confirmed.\n  8. ALWAYS think\
+      \ through problems step-by-step before taking action.\n  9. When you identify\
+      \ coordinates or elements on screen, immediately use move_mouse and click_mouse\
+      \ functions.\n\nRespond in concise Markdown when possible and always cite tool\
+      \ names in backticks.\n"
+    role: system
+  - content: Hi Alex! How can I help you today?
+    images: []
+    role: assistant
+tools:
+  - function:
+      description:
+        "Edits or creates text content in an existing file. All file paths
+        must start with '~/SOFIA/'.
+
+        "
+      name: save_file
+      parameters:
+        properties:
+          content:
+            description: Text to write.
+            type: string
+          path:
+            description: Full file path under '~/SOFIA/' to write.
+            type: string
+        required:
+          - path
+          - content
+        type: object
+    type: function
+  - function:
+      description:
+        "Reads content from a file. Provide a valid path under '~/SOFIA/'.
+
+        "
+      name: read_file
+      parameters:
+        properties:
+          path:
+            description: Full file path under '~/SOFIA/' to read.
+            type: string
+        required:
+          - path
+        type: object
+    type: function
+  - function:
+      description:
+        "Runs a shell command on the host. Use sparingly and only for safe,
+        validated commands.
+
+        "
+      name: execute_command
+      parameters:
+        properties:
+          command:
+            description: Shell command to run (e.g. 'ls -la').
+            type: string
+        required:
+          - command
+        type: object
+    type: function
+  - function:
+      description:
+        "Search inbox by sender and/or subject and return full messages unless
+        a snippet is requested.
+
+        "
+      name: gmail_search_emails
+      parameters:
+        properties:
+          max_results:
+            description: Max number of messages to return.
+            type: integer
+          sender:
+            description: Email address of the sender to filter by.
+            type: string
+          subject:
+            description: Subject line to filter by.
+            type: string
+        required: []
+        type: object
+    type: function
+  - function:
+      description:
+        "Retrieve Gmail messages with filters. If `unread_only` is true,\
+        \ only unread messages return. Normalize `since` to ISO\u20118601 (e.g., '2025-04-27T00:00:00\u2011\
+        04:00').\n"
+      name: gmail_fetch_emails
+      parameters:
+        properties:
+          all_inbox:
+            description: If true, include all categories; if false, only Primary.
+            type: boolean
+          max_results:
+            description: Max messages to retrieve.
+            type: integer
+          since:
+            description: Filter to messages newer than this (e.g., '3d', '2025-04-15').
+            type: string
+          unread_only:
+            description: If true, return only unread messages.
+            type: boolean
+        required: []
+        type: object
+    type: function
+  - function:
+      description:
+        "Send, reply, or forward an email. Requires 'sender_name', 'to',
+        and 'subject'. Sign as {display_name}.
+
+        "
+      name: gmail_send_emails
+      parameters:
+        properties:
+          bcc:
+            description: Optional list of BCC addresses.
+            items:
+              type: string
+            type: array
+          body:
+            description: "Plain\u2011text body."
+            type: string
+          cc:
+            description: Optional list of CC addresses.
+            items:
+              type: string
+            type: array
+          message_id:
+            description: Use only for replies/forwards.
+            type: string
+          mode:
+            default: new
+            enum:
+              - new
+              - reply
+              - forward
+            type: string
+          sender_name:
+            description: Your display name (e.g. '{display_name}').
+            type: string
+          subject:
+            description: Email subject line.
+            type: string
+          thread_id:
+            description: Use only for replies/forwards.
+            type: string
+          to:
+            description: List of recipient addresses.
+            items:
+              type: string
+            type: array
+        required:
+          - sender_name
+          - to
+          - subject
+        type: object
+    type: function
+  - function:
+      description:
+        "Remove token.json from ~/SOFIA/ to reset Google API credentials.
+
+        "
+      name: reset_google_cred
+      parameters:
+        properties:
+          remove_cred:
+            description: If true, delete token.json.
+            type: boolean
+        required:
+          - remove_cred
+        type: object
+    type: function
+  - function:
+      description: Capture a screenshot of the current display and return the file path.
+      name: take_screenshot
+      parameters:
+        properties: {}
+        required: []
+        type: object
+    type: function
+  - function:
+      description: Move the mouse cursor to (x, y).
+      name: move_mouse
+      parameters:
+        properties:
+          x:
+            description: Target X coordinate.
+            type: integer
+          y:
+            description: Target Y coordinate.
+            type: integer
+        required:
+          - x
+          - y
+        type: object
+    type: function
+  - function:
+      description: Click the mouse. Button can be 'left', 'right', or 'middle'.
+      name: click_mouse
+      parameters:
+        properties:
+          button:
+            enum:
+              - left
+              - right
+              - middle
+            type: string
+        required:
+          - button
+        type: object
+    type: function
+  - function:
+      description:
+        Drag the mouse from the current position to (x, y) over the specified
+        duration.
+      name: drag_mouse
+      parameters:
+        properties:
+          duration:
+            type: number
+          x:
+            type: integer
+          y:
+            type: integer
+        required:
+          - x
+          - y
+        type: object
+    type: function
+  - function:
+      description: Type arbitrary text via the keyboard.
+      name: type_text
+      parameters:
+        properties:
+          text:
+            type: string
+        required:
+          - text
+        type: object
+    type: function
+  - function:
+      description: Press a single key (e.g., 'enter', 'esc', 'a').
+      name: press_key
+      parameters:
+        properties:
+          key:
+            type: string
+        required:
+          - key
+        type: object
+    type: function
+  - function:
+      description: Press a combination of keys (e.g., ['ctrl', 'c']).
+      name: hotkey
+      parameters:
+        properties:
+          keys:
+            items:
+              type: string
+            type: array
+        required:
+          - keys
+        type: object
+    type: function
+  - function:
+      description:
+        "List upcoming calendar events with natural language date support.
+        Returns event details including time, location, and attendees.
+
+        "
+      name: calendar_list_events
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID to query (default is primary calendar).
+            type: string
+          max_results:
+            default: 10
+            description: Maximum number of events to return.
+            type: integer
+          time_max:
+            description: End date range (e.g., 'next week', '2025-01-20', RFC3339).
+            type: string
+          time_min:
+            description: Start date range (e.g., 'today', 'tomorrow', RFC3339).
+            type: string
+        required: []
+        type: object
+    type: function
+  - function:
+      description:
+        "Create a new calendar event with smart time parsing. Supports natural
+        language dates and times.
+
+        "
+      name: calendar_create_event
+      parameters:
+        properties:
+          attendees:
+            description: Comma-separated list of attendee email addresses.
+            type: string
+          calendar_id:
+            default: primary
+            description: Calendar ID to create event in.
+            type: string
+          description:
+            description: Event description or notes.
+            type: string
+          end_time:
+            description: Event end time (natural language or RFC3339). Defaults to 1 hour after start.
+            type: string
+          location:
+            description: Event location or address.
+            type: string
+          start_time:
+            description: Event start time (e.g., 'tomorrow 2pm', '2025-01-15 14:00').
+            type: string
+          summary:
+            description: Event title or summary.
+            type: string
+        required:
+          - summary
+          - start_time
+        type: object
+    type: function
+  - function:
+      description:
+        "Search calendar events by text query in titles and descriptions.
+        Optionally filter by date range.
+
+        "
+      name: calendar_search_events
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID to search.
+            type: string
+          max_results:
+            default: 10
+            description: Maximum number of events to return.
+            type: integer
+          query:
+            description: Text to search for in event titles and descriptions.
+            type: string
+          time_max:
+            description: End date range for search (natural language or RFC3339).
+            type: string
+          time_min:
+            description: Start date range for search (natural language or RFC3339).
+            type: string
+        required:
+          - query
+        type: object
+    type: function
+  - function:
+      description:
+        "Delete a calendar event by its ID. Use calendar_list_events or calendar_search_events
+        to find the event ID first.
+
+        "
+      name: calendar_delete_event
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID where event exists.
+            type: string
+          event_id:
+            description: ID of the event to delete.
+            type: string
+        required:
+          - event_id
+        type: object
+    type: function

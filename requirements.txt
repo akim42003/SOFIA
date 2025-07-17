@@ -1,0 +1,47 @@
+# SOFIA Core Requirements
+
+# LLM Integration
+ollama
+
+# Web Interface
+gradio
+
+# Desktop Automation
+pyautogui
+mss
+
+# Computer Vision (for OmniParser)
+torch
+torchvision
+transformers
+ultralytics
+opencv-python
+Pillow
+supervision
+easyocr
+matplotlib
+
+# OCR
+paddlepaddle
+paddleocr==2.10.0
+
+# Gmail Integration
+fastmcp
+google-auth
+google-auth-oauthlib
+google-api-python-client
+
+# Utilities
+PyYAML
+dateparser
+numpy
+markdown
+requests
+tqdm
+
+# Text-to-Speech and Audio
+pyttsx3
+pygame
+pyaudio
+openai-whisper
+soundfile
