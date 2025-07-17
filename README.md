@@ -39,7 +39,7 @@ See SOFIA's computer use capabilities in action:
 
 - Ubuntu 22.04+ (Windows/macOS support planned)
 - Python 3.11+
-- For local AI: Ollama with CUDA GPU (8GB+ VRAM recommended)
+- For computer use and local AI: CUDA enabled GPU (24gb+ recommended)
 - For cloud AI: OpenAI API key
 - Google credentials for email/calendar features
 - Separate monitor recommended for desktop automation

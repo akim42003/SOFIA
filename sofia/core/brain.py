@@ -3,6 +3,7 @@ import json
 import os
 import yaml
 import time
+from pathlib import Path
 from sofia.core.tools.system import save_file, read_file, execute_command, reset_google_cred
 from sofia.integrations.gmail.client import fetch_gmail, gmail_search_emails, send_gmail, calendar_list_events, calendar_create_event, calendar_search_events, calendar_delete_event
 from sofia.vision.omniparser import process_image
@@ -65,6 +66,19 @@ class ChatBrain:
         # Memory management settings
         self.MAX_SCREENSHOT_MESSAGES = 5
         self.MAX_TOTAL_MESSAGES = 50
+    
+    def _get_user_first_name(self):
+        """Get user's first name from config file"""
+        try:
+            config_path = Path(__file__).parent.parent.parent / "config" / "user_config.yaml"
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    user_config = yaml.safe_load(f)
+                    full_name = user_config.get("user_name", "User")
+                    return full_name.split()[0] if full_name else "User"
+        except Exception:
+            pass
+        return "User"
 
     def cleanup_old_messages(self, messages):
         """Clean up old messages to prevent memory accumulation"""
@@ -209,7 +223,8 @@ class ChatBrain:
         return executed
 
     def continuous_chat(self, messages, tools):
-        user_input = input("Alex: ")
+        user_name = self._get_user_first_name()
+        user_input = input(f"{user_name}: ")
         messages.append({"role": "user", "content": user_input})
 
         response: ChatResponse = self.chat(
@@ -238,7 +253,11 @@ class ChatBrain:
         return response.message.content, user_input
 
     def initialize_chat(self, messages, tools):
-        print("SOFIA: Hi Alex! How can I help you?")
+        # Use the initial message from config instead of hardcoded greeting
+        if messages and messages[0].get('role') == 'assistant':
+            print(f"SOFIA: {messages[0]['content']}")
+        else:
+            print("SOFIA: Hi! How can I help you!")
         while True:
             try:
                 response_text, _ = self.continuous_chat(messages, tools)

@@ -300,6 +300,21 @@ class OpenAIChatBrain:
         
         # Store current messages for conversation saving
         self._current_messages = []
+    
+    def _get_user_first_name(self):
+        """Get user's first name from config file"""
+        try:
+            import yaml
+            from pathlib import Path
+            config_path = Path(__file__).parent.parent.parent / "config" / "user_config.yaml"
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    user_config = yaml.safe_load(f)
+                    full_name = user_config.get("user_name", "User")
+                    return full_name.split()[0] if full_name else "User"
+        except Exception:
+            pass
+        return "User"
 
     def _save_conversation_wrapper(self, title: str = None, include_tools: bool = False) -> Dict:
         """
@@ -469,7 +484,9 @@ class OpenAIChatBrain:
 
     def continuous_chat(self, messages, tools, stream=False):
         """Handle a single chat interaction with user input and tool execution"""
-        user_input = input("Alex: ")
+        # Get user's first name for prompt
+        user_name = self._get_user_first_name()
+        user_input = input(f"{user_name}: ")
         messages.append({"role": "user", "content": user_input})
         
         # Update current messages reference for conversation saving
@@ -601,7 +618,11 @@ class OpenAIChatBrain:
 
     def initialize_chat(self, messages, tools):
         """Main chat loop"""
-        print("SOFIA: Hi Alex! How can I help you?")
+        # Use the initial message from config instead of hardcoded greeting
+        if messages and messages[0].get('role') == 'assistant':
+            print(f"SOFIA: {messages[0]['content']}")
+        else:
+            print("SOFIA: Hi! How can I help you?")
         while True:
             try:
                 response_text, _ = self.continuous_chat(messages, tools, stream=True)

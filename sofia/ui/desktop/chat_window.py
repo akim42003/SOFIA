@@ -215,6 +215,12 @@ class TransparentChatWindow(QWidget):
             # Initialize conversation with system messages
             self.chat_messages = messages.copy()
             
+            # Display initial greeting message from assistant
+            for msg in messages:
+                if msg.get('role') == 'assistant':
+                    self.add_message("sofia", msg.get('content', ''))
+                    break
+            
             # Determine which backend is being used
             from sofia.core.brain_factory import load_sofia_config
             config = load_sofia_config()
