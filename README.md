@@ -28,7 +28,7 @@ The system uses a THINK → PLAN → EXECUTE → VERIFY workflow for autonomous 
 
 See SOFIA's computer use capabilities in action:
 
-https://github.com/user-attachments/assets/sofia_demo.mp4
+[https://github.com/user-attachments/assets/sofia_demo.mp4](https://github.com/user-attachments/assets/67e84b5c-9a3d-4bb5-84c7-ee2982c2275f)
 
 *The demo showcases SOFIA's ability to understand visual interfaces, navigate applications, and perform desktop automation tasks.*
 
