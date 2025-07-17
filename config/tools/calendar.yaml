@@ -1,0 +1,113 @@
+tools:
+  - function:
+      description:
+        "List upcoming calendar events with natural language date support.
+        Can filter by date range and calendar.
+
+        "
+      name: calendar_list_events
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID to list events from.
+            type: string
+          max_results:
+            default: 10
+            description: Maximum number of events to return.
+            type: integer
+          time_max:
+            description: End date/time for event range (natural language or RFC3339).
+            type: string
+          time_min:
+            description: Start date/time for event range (natural language or RFC3339).
+            type: string
+        type: object
+        required: []
+    type: function
+  - function:
+      description:
+        "Create new calendar events with smart time parsing. Supports natural
+        language date/time input and automatic timezone handling.
+
+        "
+      name: calendar_create_event
+      parameters:
+        properties:
+          attendees:
+            description: List of attendee email addresses (comma-separated).
+            type: string
+          calendar_id:
+            default: primary
+            description: Calendar ID to create event in.
+            type: string
+          description:
+            description: Event description or notes.
+            type: string
+          end_time:
+            description: End date/time (natural language or RFC3339).
+            type: string
+          location:
+            description: Event location.
+            type: string
+          start_time:
+            description: Start date/time (natural language or RFC3339).
+            type: string
+          summary:
+            description: Event title or summary.
+            type: string
+        required:
+          - summary
+          - start_time
+        type: object
+    type: function
+  - function:
+      description:
+        "Search calendar events by text query in titles and descriptions.
+        Optionally filter by date range.
+
+        "
+      name: calendar_search_events
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID to search.
+            type: string
+          max_results:
+            default: 10
+            description: Maximum number of events to return.
+            type: integer
+          query:
+            description: Text to search for in event titles and descriptions.
+            type: string
+          time_max:
+            description: End date range for search (natural language or RFC3339).
+            type: string
+          time_min:
+            description: Start date range for search (natural language or RFC3339).
+            type: string
+        required:
+          - query
+        type: object
+    type: function
+  - function:
+      description:
+        "Delete a calendar event by its ID. Use calendar_list_events or calendar_search_events
+        to find the event ID first.
+
+        "
+      name: calendar_delete_event
+      parameters:
+        properties:
+          calendar_id:
+            default: primary
+            description: Calendar ID where event exists.
+            type: string
+          event_id:
+            description: ID of the event to delete.
+            type: string
+        required:
+          - event_id
+        type: object
+    type: function

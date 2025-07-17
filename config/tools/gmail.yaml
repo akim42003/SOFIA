@@ -1,0 +1,86 @@
+tools:
+  - function:
+      description:
+        "Search Gmail messages by sender, subject, or other criteria. Returns
+        a list of matching messages with metadata.
+
+        "
+      name: gmail_search_emails
+      parameters:
+        properties:
+          max_results:
+            default: 10
+            description: Maximum number of messages to return.
+            type: integer
+          query:
+            description: Gmail search query (e.g., 'from:user@domain.com', 'subject:meeting').
+            type: string
+        required:
+          - query
+        type: object
+    type: function
+  - function:
+      description:
+        "Fetch Gmail messages by various filters including sender, subject,
+        date range, and read/unread status.
+
+        "
+      name: gmail_fetch_emails
+      parameters:
+        properties:
+          include_body:
+            default: true
+            description: Whether to include message body content.
+            type: boolean
+          max_results:
+            default: 10
+            description: Maximum number of messages to return.
+            type: integer
+          query:
+            description: Gmail search query for filtering messages.
+            type: string
+          sender:
+            description: Filter by sender email address.
+            type: string
+          subject:
+            description: Filter by subject line content.
+            type: string
+          time_range:
+            description: Filter by time range (e.g., 'today', 'last week', 'last month').
+            type: string
+          unread_only:
+            default: false
+            description: Only return unread messages.
+            type: boolean
+        type: object
+    type: function
+  - function:
+      description:
+        "Send Gmail messages including new emails, replies, and forwards.
+        Supports HTML formatting and attachments.
+
+        "
+      name: gmail_send_emails
+      parameters:
+        properties:
+          body:
+            description: The email body content.
+            type: string
+          cc:
+            description: CC email addresses (comma-separated).
+            type: string
+          reply_to_id:
+            description: Message ID to reply to (for replies).
+            type: string
+          subject:
+            description: The email subject line.
+            type: string
+          to:
+            description: Recipient email addresses (comma-separated).
+            type: string
+        required:
+          - to
+          - subject
+          - body
+        type: object
+    type: function

@@ -8,13 +8,20 @@ from .chat_handler import respond
 def create_chat_interface(brain, messages, tools, backend):
     """Create the main Gradio interface"""
 
+    # Get greeting message from config
+    greeting = "Hi! How can I assist you today?"
+    for message in messages:
+        if message.get("role") == "assistant":
+            greeting = message.get("content", greeting)
+            break
+
     # Create custom interface with audio support
     with gr.Blocks(title=f"SOFIA Assistant ({backend.upper()} Backend)") as demo:
         gr.Markdown(f"# SOFIA Assistant ({backend.upper()} Backend)")
         gr.Markdown("Sort of Functional Interactive Agent - Type a message or upload audio")
 
-        # Main chat interface
-        chatbot = gr.Chatbot(label="Chat", height=500)
+        # Main chat interface with initial greeting
+        chatbot = gr.Chatbot(label="Chat", height=500, value=[(None, greeting)])
 
         # Message input (full width)
         msg_input = gr.Textbox(

@@ -17,10 +17,25 @@ from sofia.core.tools.desktop import (
 )
 
 
-def load_config(config_file='config/tools.yaml'):
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    return config.get('messages', []), config.get('tools', [])
+def load_config(config_file='config/identity.yaml'):
+    # Try using the new modular loader first
+    try:
+        import os
+        import sys
+        
+        # Add config directory to path
+        config_dir = os.path.dirname(config_file)
+        if config_dir not in sys.path:
+            sys.path.insert(0, config_dir)
+        
+        from load_tools import load_tools_config
+        config = load_tools_config(config_dir)
+        return config.get('messages', []), config.get('tools', [])
+    except ImportError:
+        # Fallback to original loader
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        return config.get('messages', []), config.get('tools', [])
 
 
 class ChatBrain:

@@ -17,12 +17,28 @@ from sofia.core.tools.desktop import (
     press_key,
     hotkey
 )
+from sofia.core.tools.conversation import _summarize_conversation, _save_markdown_file
 
 
-def load_config(config_file='config/tools.yaml'):
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    return config.get('messages', []), config.get('tools', [])
+def load_config(config_file='config/identity.yaml'):
+    # Try using the new modular loader first
+    try:
+        import os
+        import sys
+        
+        # Add config directory to path
+        config_dir = os.path.dirname(config_file)
+        if config_dir not in sys.path:
+            sys.path.insert(0, config_dir)
+        
+        from load_tools import load_tools_config
+        config = load_tools_config(config_dir)
+        return config.get('messages', []), config.get('tools', [])
+    except ImportError:
+        # Fallback to original loader
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        return config.get('messages', []), config.get('tools', [])
 
 
 def convert_tools_to_openai_format(tools: List[Dict]) -> List[Dict]:
@@ -277,11 +293,55 @@ class OpenAIChatBrain:
             "type_text": type_text,
             "press_key": press_key,
             "hotkey": hotkey,
+            "save_conversation": self._save_conversation_wrapper,
         }
+        
+        # Store current messages for conversation saving
+        self._current_messages = []
+
+    def _save_conversation_wrapper(self, title: str = None, include_tools: bool = False) -> Dict:
+        """
+        Wrapper for saving conversation that has access to current messages
+        
+        Args:
+            title: Optional title for the conversation
+            include_tools: Whether to include tool call details in the summary
+            
+        Returns:
+            Dict with status and file path
+        """
+        try:
+            if not self._current_messages:
+                return {
+                    "status": "error",
+                    "message": "No conversation found to save"
+                }
+            
+            # Summarize the conversation
+            summary = _summarize_conversation(self._current_messages, self.client, self.model)
+            
+            # Save as markdown file
+            file_path = _save_markdown_file(summary, title)
+            
+            return {
+                "status": "success",
+                "message": f"Conversation saved successfully",
+                "file_path": file_path,
+                "summary_length": len(summary.split())
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error", 
+                "message": f"Failed to save conversation: {str(e)}"
+            }
 
     def execute_tool_calls(self, tool_calls, messages):
         """Execute tool calls from OpenAI response"""
         executed = False
+        
+        # Update current messages reference for conversation saving
+        self._current_messages = messages
         
         for i, tool_call in enumerate(tool_calls):
             # Add cooldown between tools (except for first tool)
@@ -410,6 +470,9 @@ class OpenAIChatBrain:
         user_input = input("Alex: ")
         messages.append({"role": "user", "content": user_input})
         
+        # Update current messages reference for conversation saving
+        self._current_messages = messages
+        
         # Convert to OpenAI format
         openai_messages = convert_messages_to_openai_format(messages)
         openai_tools = convert_tools_to_openai_format(tools)
@@ -507,6 +570,9 @@ class OpenAIChatBrain:
 
     def continuous_chat_no_input(self, messages, tools, stream=False):
         """Continue chat without user input (for tool response handling)"""
+        # Update current messages reference for conversation saving
+        self._current_messages = messages
+        
         openai_messages = convert_messages_to_openai_format(messages)
         openai_tools = convert_tools_to_openai_format(tools)
         

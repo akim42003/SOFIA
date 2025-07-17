@@ -1,0 +1,121 @@
+tools:
+  - function:
+      description:
+        "Capture a screenshot of the current desktop for analysis. Essential
+        for computer use capabilities and UI interaction.
+
+        "
+      name: take_screenshot
+      parameters:
+        type: object
+        properties: {}
+        required: []
+    type: function
+  - function:
+      description:
+        "Move the mouse cursor to specific screen coordinates. Use this before
+        clicking on UI elements.
+
+        "
+      name: move_mouse
+      parameters:
+        properties:
+          x:
+            description: X coordinate on screen.
+            type: integer
+          y:
+            description: Y coordinate on screen.
+            type: integer
+        required:
+          - x
+          - y
+        type: object
+    type: function
+  - function:
+      description:
+        "Click the mouse button at current cursor position. Supports left,
+        right, and middle mouse buttons.
+
+        "
+      name: click_mouse
+      parameters:
+        properties:
+          button:
+            default: left
+            description: Mouse button to click ('left', 'right', 'middle').
+            type: string
+        type: object
+        required: []
+    type: function
+  - function:
+      description:
+        "Drag the mouse from current position to target coordinates. Useful
+        for drag-and-drop operations.
+
+        "
+      name: drag_mouse
+      parameters:
+        properties:
+          duration:
+            default: 0.3
+            description: Duration of drag operation in seconds.
+            type: number
+          x:
+            description: Target X coordinate.
+            type: integer
+          y:
+            description: Target Y coordinate.
+            type: integer
+        required:
+          - x
+          - y
+        type: object
+    type: function
+  - function:
+      description:
+        "Type text at current cursor position. Simulates keyboard input for
+        filling forms or text entry.
+
+        "
+      name: type_text
+      parameters:
+        properties:
+          text:
+            description: Text to type.
+            type: string
+        required:
+          - text
+        type: object
+    type: function
+  - function:
+      description:
+        "Press a single key on the keyboard. Supports special keys like Enter,
+        Escape, Tab, etc.
+
+        "
+      name: press_key
+      parameters:
+        properties:
+          key:
+            description: Key to press (e.g., 'enter', 'esc', 'tab', 'backspace').
+            type: string
+        required:
+          - key
+        type: object
+    type: function
+  - function:
+      description:
+        "Execute keyboard shortcuts by pressing multiple keys simultaneously.
+        Useful for system commands and application shortcuts.
+
+        "
+      name: hotkey
+      parameters:
+        properties:
+          keys:
+            description: Keys to press simultaneously (e.g., 'ctrl+c', 'alt+tab').
+            type: string
+        required:
+          - keys
+        type: object
+    type: function

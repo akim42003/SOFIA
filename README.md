@@ -24,6 +24,14 @@ SOFIA employs a modular architecture with three primary interfaces:
 
 The system uses a THINK → PLAN → EXECUTE → VERIFY workflow for autonomous task completion, with concurrent tool execution and conversation memory management.
 
+## Demo
+
+See SOFIA's computer use capabilities in action:
+
+https://github.com/user-attachments/assets/sofia_demo.mp4
+
+*The demo showcases SOFIA's ability to understand visual interfaces, navigate applications, and perform desktop automation tasks.*
+
 ## Getting Started
 
 ### Requirements
@@ -110,7 +118,7 @@ ollama:
 ```
 
 ### Tool Configuration
-Customize available tools in `config/tools.yaml`
+Customize agent behavior and available tools in `config/tools`
 
 ### User Personalization
 Create `config/user_config.yaml` for personal preferences and context

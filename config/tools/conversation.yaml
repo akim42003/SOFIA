@@ -1,0 +1,20 @@
+tools:
+  - function:
+      description:
+        "Save and summarize the current conversation as a markdown file in the conversations folder.
+        This creates a comprehensive summary of the conversation including key topics, decisions,
+        and outcomes. The summary is saved as a readable markdown file with timestamp and metadata.
+        "
+      name: save_conversation
+      parameters:
+        properties:
+          title:
+            description: "Optional title for the conversation file. If not provided, a timestamp-based filename will be used."
+            type: string
+          include_tools:
+            description: "Whether to include details about tool calls in the summary. Default: false"
+            type: boolean
+            default: false
+        type: object
+        required: []
+    type: function

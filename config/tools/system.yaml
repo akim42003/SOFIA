@@ -1,0 +1,65 @@
+tools:
+  - function:
+      description:
+        "Edits or creates text content in an existing file. All file paths
+        must start with '~/SOFIA/'.
+
+        "
+      name: save_file
+      parameters:
+        properties:
+          content:
+            description: The content to write to the file.
+            type: string
+          path:
+            description: The file path to write to (must start with '~/SOFIA/').
+            type: string
+        required:
+          - path
+          - content
+        type: object
+    type: function
+  - function:
+      description:
+        "Reads text content from an existing file. All file paths must start
+        with '~/SOFIA/'.
+
+        "
+      name: read_file
+      parameters:
+        properties:
+          path:
+            description: The file path to read from (must start with '~/SOFIA/').
+            type: string
+        required:
+          - path
+        type: object
+    type: function
+  - function:
+      description:
+        "Executes system commands via terminal. Use this for running shell
+        commands, launching applications, or system operations.
+
+        "
+      name: execute_command
+      parameters:
+        properties:
+          command:
+            description: The command to execute in the terminal. Avoid using execute_command to open apps (default to Desktop tools).
+            type: string
+        required:
+          - command
+        type: object
+    type: function
+  - function:
+      description:
+        "Resets Google OAuth credentials by removing the stored token file.
+        Use this when authentication errors occur.
+
+        "
+      name: reset_google_cred
+      parameters:
+        type: object
+        properties: {}
+        required: []
+    type: function

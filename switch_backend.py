@@ -46,21 +46,21 @@ def check_openai_key():
     """Check if OpenAI API key is available"""
     # Check in order: config file, .env file, environment variable
     config = load_config()
-    
+
     # 1. Check config file
     api_key = config.get('openai', {}).get('api_key')
     if api_key:
         return True
-    
+
     # 2. Check .env file
     env_vars = load_env_file()
     if env_vars.get('OPENAI_API_KEY'):
         return True
-    
+
     # 3. Check environment variable
     if os.getenv('OPENAI_API_KEY'):
         return True
-    
+
     return False
 
 
@@ -72,18 +72,18 @@ def main():
         print("  openai  - Switch to OpenAI cloud backend")
         print("  status  - Show current backend configuration")
         sys.exit(1)
-    
+
     command = sys.argv[1].lower()
     config = load_config()
-    
+
     if command == 'status':
         current_backend = config.get('ai_backend', 'ollama')
         print(f"Current backend: {current_backend}")
-        
+
         if current_backend == 'openai':
             model = config.get('openai', {}).get('model', 'gpt-4o-mini')
             print(f"OpenAI model: {model}")
-            
+
             if check_openai_key():
                 print("OpenAI API key: ✓ Found")
                 # Show where the key was found
@@ -103,16 +103,16 @@ def main():
         else:
             model = config.get('ollama', {}).get('model', 'sofia2')
             print(f"Ollama model: {model}")
-    
+
     elif command == 'ollama':
         config['ai_backend'] = 'ollama'
         save_config(config)
-        print("✓ Switched to Ollama (local) backend")
+        print("Switched to Ollama (local) backend")
         print(f"Using model: {config.get('ollama', {}).get('model', 'sofia2')}")
-    
+
     elif command == 'openai':
         if not check_openai_key():
-            print("✗ OpenAI API key not found!")
+            print("OpenAI API key not found!")
             print("\nTo use OpenAI backend, you need to set your API key:")
             print("1. Create a .env file in the project root with:")
             print("   OPENAI_API_KEY=your-key-here")
@@ -121,13 +121,13 @@ def main():
             print("     api_key: 'your-key-here'")
             print("3. Or set environment variable: export OPENAI_API_KEY='your-key'")
             sys.exit(1)
-        
+
         config['ai_backend'] = 'openai'
         save_config(config)
-        print("✓ Switched to OpenAI (cloud) backend")
+        print("Switched to OpenAI (cloud) backend")
         print(f"Using model: {config.get('openai', {}).get('model', 'gpt-4o-mini')}")
         print("\nNote: OpenAI API usage will incur costs based on your usage.")
-    
+
     else:
         print(f"Unknown command: {command}")
         print("Use: python switch_backend.py [ollama|openai|status]")
