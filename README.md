@@ -13,9 +13,10 @@ An AI assistant that can control your desktop, manage email/calendar, and handle
 ## Getting Started
 
 ### Requirements
+- Ubuntu 22.04+
 - Python 3.11+
 - For local AI: Ollama with CUDA GPU
-- For cloud AI: OpenAI API key
+- For cloud AI: OpenAI API key (GPU highly recommended for OCR and STT performance)
 - Separate monitors recommended for desktop control
 
 ### Installation
