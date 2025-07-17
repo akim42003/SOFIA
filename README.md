@@ -139,4 +139,4 @@ Create `config/user_config.yaml` for personal preferences and context
 - **Gmail Authentication**: Check credentials.json and OAuth2 token validity
 - **Desktop Control**: Verify PyAutoGUI permissions and display configuration
 
-Built by Alex Kim for the love of the game.
+Built by Alex Kim.
