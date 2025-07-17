@@ -89,13 +89,13 @@ SOFIA's desktop automation leverages advanced computer vision:
 
 ### Local Models (Ollama)
 - **Pros**: Complete privacy, offline operation, no API costs
-- **Cons**: Requires CUDA GPU (8GB+ VRAM), slower inference
+- **Cons**: Requires CUDA GPU (24GB+ VRAM), slower inference
 - **Recommended Models**: mistral-small3.1:24b, llama4, custom sofia model
 
 ### Cloud Models (OpenAI)
 - **Pros**: Faster response, higher accuracy, no hardware requirements
 - **Cons**: API costs, requires internet, data privacy considerations
-- **Available Models**: gpt-4o, gpt-4, gpt-3.5-turbo
+- **Available Models**: gpt-4o, gpt-o4mini, etc
 
 ### Backend Management
 
