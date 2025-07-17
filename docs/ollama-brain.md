@@ -4,7 +4,7 @@ The Ollama Brain provides local AI capabilities through the Ollama framework, en
 
 ## Overview
 
-The Ollama Brain (`sofia/core/brain.py`) implements a local AI interface using the Ollama library. It provides the same capabilities as the OpenAI Brain but runs models locally, offering privacy, offline operation, and cost efficiency.
+The Ollama Brain (`sofia/core/brain.py`) implements a local AI interface using the Ollama library. It provides the same capabilities as the OpenAI Brain but runs models locally, offering privacy, offline operation, and cost efficiency. The brain features automatic memory management, screenshot optimization, and robust error handling for production use.
 
 ## Architecture
 
@@ -40,7 +40,7 @@ The Ollama Brain (`sofia/core/brain.py`) implements a local AI interface using t
 class ChatBrain:
     def __init__(self, chat_func):
         \"\"\"
-        Initialize Ollama Brain with chat function
+        Initialize Ollama Brain with chat function and memory management
 
         Args:
             chat_func: Ollama chat function (typically ollama.chat)
@@ -53,6 +53,10 @@ class ChatBrain:
             \"gmail_search_emails\": gmail_search_emails,
             \"gmail_fetch_emails\": fetch_gmail,
             \"gmail_send_emails\": send_gmail,
+            \"calendar_list_events\": calendar_list_events,
+            \"calendar_create_event\": calendar_create_event,
+            \"calendar_search_events\": calendar_search_events,
+            \"calendar_delete_event\": calendar_delete_event,
             \"reset_google_cred\": reset_google_cred,
             \"take_screenshot\": take_screenshot,
             \"move_mouse\": move_mouse,
@@ -62,6 +66,10 @@ class ChatBrain:
             \"press_key\": press_key,
             \"hotkey\": hotkey,
         }
+
+        # Memory management settings
+        self.MAX_SCREENSHOT_MESSAGES = 5
+        self.MAX_TOTAL_MESSAGES = 50
 ```
 
 ### Model Configuration
@@ -71,61 +79,122 @@ The Ollama Brain uses models configured through Ollama's model system:
 ```bash
 # Create custom SOFIA model
 ollama create sofia2 -f ~/SOFIA/config/Modelfile.enhanced
-
-# Available model commands
-ollama list                    # List installed models
-ollama pull mistral-small3.1:24b     # Download new model
-ollama rm sofia2              # Remove model
 ```
 
 ### Enhanced Modelfile
 
 The enhanced Modelfile (`config/Modelfile.enhanced`) defines SOFIA's behavior:
 
-```dockerfile
-FROM mistral-small3.1:24b
+## Memory Management and Optimization
 
-SYSTEM \"\"\"
-You are SOFIA (Sort of Functional Interactive Agent), a personal AI productivity and life management assistant for {USER_NAME}.
+The Ollama Brain includes robust memory management features to handle long-running conversations and resource-intensive operations:
 
-## Core Capabilities
+### Automatic Message Cleanup
 
-You have access to powerful tools that allow you to:
-1. **Desktop Automation**: Take screenshots, control mouse/keyboard, analyze UI elements
-2. **Email Management**: Search, read, compose, reply to Gmail messages
-3. **File Operations**: Read/write files (sandboxed to ~/SOFIA/)
-4. **System Commands**: Execute terminal commands
+```python
+def cleanup_old_messages(self, messages):
+    \"\"\"Clean up old messages to prevent memory accumulation\"\"\"
+    # First, clean up excess screenshot messages
+    screenshot_count = 0
+    cleaned_messages = []
 
-## Tool Usage Guidelines
+    # Process messages in reverse order to keep the most recent screenshots
+    for msg in reversed(messages):
+        if msg.get('role') == 'assistant' and msg.get('images'):
+            if screenshot_count < self.MAX_SCREENSHOT_MESSAGES:
+                cleaned_messages.insert(0, msg)
+                screenshot_count += 1
+            # Skip older screenshot messages
+        elif msg.get('role') == 'tool' and msg.get('name') == 'take_screenshot':
+            if screenshot_count < self.MAX_SCREENSHOT_MESSAGES:
+                cleaned_messages.insert(0, msg)
+                # Don't increment counter for tool messages, only for image messages
+            # Skip older screenshot tool messages
+        else:
+            cleaned_messages.insert(0, msg)
 
-### Desktop Automation
-- Always take a screenshot first to understand the current state
-- After performing actions (click, type, etc.), take another screenshot to verify results
-- Use OmniParser integration for accurate UI element detection
-- Chain multiple actions for complex workflows
+    # Then, limit total message count
+    if len(cleaned_messages) > self.MAX_TOTAL_MESSAGES:
+        # Keep the most recent messages
+        cleaned_messages = cleaned_messages[-self.MAX_TOTAL_MESSAGES:]
 
-### Verification Loop Behavior
-When completing tasks:
-1. Execute the requested action
-2. Verify results (screenshot for UI, read for files)
-3. Continue with additional tools if needed
-4. Only report completion after verification
-5. If results aren't as expected, retry or adjust approach
+    return cleaned_messages
+```
 
-## Agent Behavior
-You operate in a continuous loop:
-- Analyze the request
-- Plan the approach
-- Execute tools in parallel when possible
-- Verify results
-- Continue until task is truly complete
-- Report verified success or encountered issues
+### Screenshot Processing with Error Handling
 
-Remember: You're not just a chatbot - you're an agent that takes action and verifies results.
-\"\"\"
+The brain includes comprehensive screenshot processing with retry logic and resource management:
 
-PARAMETER temperature 1
-PARAMETER num_ctx 32768
+```python
+# Handle screenshot processing with delays, retries, and helpful error messages
+if tool_name == \"take_screenshot\":
+    path = output.get(\"path\")
+    if path and os.path.exists(path):
+        # Add delay before processing to prevent resource overload
+        time.sleep(1.0)
+
+        # Retry logic for OmniParser processing
+        max_retries = 2
+        retry_delay = 2.0
+
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    print(f\"OmniParser retry attempt {attempt}/{max_retries}\")
+                    time.sleep(retry_delay)
+                else:
+                    print(\"processing images with OmniParser\")
+
+                # Force cleanup before processing
+                import gc
+                gc.collect()
+
+                # Clear CUDA cache if available
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except:
+                    pass
+
+                # Process with OmniParser
+                image_content = process_image(path)
+                messages.append({
+                    \"role\": \"assistant\",
+                    \"content\": image_content,
+                    \"images\": [path]
+                })
+
+                # Force cleanup after successful processing
+                gc.collect()
+                break  # Success - exit retry loop
+
+            except Exception as omni_error:
+                print(f\"OmniParser processing failed (attempt {attempt + 1}): {omni_error}\")
+
+                if attempt == max_retries:
+                    # Final attempt failed - provide helpful error message
+                    error_message = (
+                        \"Screenshot captured, but visual analysis failed due to resource overload. \"
+                        \"The system's vision processing models (GPU/CPU) are temporarily overwhelmed. \"
+                        \"Please wait 5-10 seconds before taking another screenshot to allow the system to recover. \"
+                        \"The screenshot image is still available for viewing.\"
+                    )
+                    messages.append({
+                        \"role\": \"assistant\",
+                        \"content\": error_message,
+                        \"images\": [path]
+                    })
+
+                # Force cleanup on error
+                import gc
+                gc.collect()
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except:
+                    pass
 ```
 
 ## Message Processing
@@ -331,24 +400,6 @@ ollama list
 ollama run sofia2 \"Hello, I'm testing SOFIA\"
 ```
 
-### Model Customization
-
-The Modelfile can be customized for different use cases:
-
-```dockerfile
-# High-performance configuration
-FROM mistral-small3.1:24b
-PARAMETER temperature 0.7
-PARAMETER num_ctx 16384
-PARAMETER top_p 0.9
-
-# Creative configuration
-FROM mistral-small3.1:24b
-PARAMETER temperature 1.2
-PARAMETER num_ctx 32768
-PARAMETER top_k 40
-```
-
 ### System Integration
 
 ```python
@@ -393,51 +444,6 @@ def _should_compress_images(self, messages: List[Dict]) -> bool:
     \"\"\"Determine if images should be compressed or removed\"\"\"
     image_count = sum(1 for m in messages if m.get('images'))
     return image_count > 5  # Keep only recent images
-```
-
-### Parallel Tool Execution
-
-```python
-def execute_parallel_tools(self, tool_calls: List, messages: List[Dict]) -> bool:
-    \"\"\"Execute multiple tools in parallel for better performance\"\"\"
-    import concurrent.futures
-
-    def execute_single_tool(tool_call):
-        tool_name = tool_call.function.name
-        args = json.loads(tool_call.function.arguments) if isinstance(tool_call.function.arguments, str) else tool_call.function.arguments
-        func = self.available_functions.get(tool_name)
-
-        if func:
-            try:
-                return tool_name, func(**args), None
-            except Exception as e:
-                return tool_name, None, str(e)
-        else:
-            return tool_name, None, f\"Function {tool_name} not found\"
-
-    # Execute tools in parallel (for non-dependent operations)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [executor.submit(execute_single_tool, tool) for tool in tool_calls]
-
-        executed = False
-        for future in concurrent.futures.as_completed(futures):
-            tool_name, output, error = future.result()
-
-            if error:
-                messages.append({
-                    \"role\": \"tool\",
-                    \"content\": f\"Error: {error}\",
-                    \"name\": tool_name,
-                })
-            else:
-                messages.append({
-                    \"role\": \"tool\",
-                    \"content\": str(output),
-                    \"name\": tool_name,
-                })
-                executed = True
-
-    return executed
 ```
 
 ## Integration with UI Components
@@ -530,28 +536,6 @@ def verify_ollama_setup():
         print(f\"Ollama setup error: {e}\")
         return False
 ```
-
-### Performance Monitoring
-
-```python
-def monitor_performance(self, messages: List[Dict], start_time: float):
-    \"\"\"Monitor and log performance metrics\"\"\"
-    end_time = time.time()
-    duration = end_time - start_time
-
-    token_estimate = sum(len(str(m.get('content', ''))) for m in messages) // 4
-    tokens_per_second = token_estimate / duration if duration > 0 else 0
-
-    print(f\"Response time: {duration:.2f}s\")
-    print(f\"Estimated tokens: {token_estimate}\")
-    print(f\"Tokens/second: {tokens_per_second:.1f}\")
-
-    # Log to file for analysis
-    with open('~/SOFIA/logs/performance.log', 'a') as f:
-        f.write(f\"{time.time()},{duration},{token_estimate},{tokens_per_second}\\n\")
-```
-
-## Advanced Features
 
 ### Custom Model Training Data
 
@@ -656,23 +640,6 @@ def test_streaming_response():
     response_generator = brain.streaming_chat(messages, tools)
     full_response = \"\".join(response_generator)
     assert len(full_response) > 0
-```
-
-### Integration Tests
-
-```python
-def test_complete_conversation():
-    \"\"\"Test complete conversation flow\"\"\"
-    if not verify_ollama_setup():
-        pytest.skip(\"Ollama not available\")
-
-    brain = ChatBrain(ollama.chat)
-    messages = [{\"role\": \"user\", \"content\": \"What's 2+2?\"}]
-    tools = []
-
-    response, user_input = brain.continuous_chat(messages, tools)
-    assert \"4\" in response
-    assert len(messages) == 3  # user, assistant, follow-up
 ```
 
 The Ollama Brain provides a powerful, privacy-focused alternative to cloud-based AI while maintaining full compatibility with SOFIA's tool ecosystem and user interfaces.

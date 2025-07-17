@@ -41,11 +41,11 @@ class OpenAIChatBrain:
     def __init__(self, api_key: Optional[str] = None, model: str = \"gpt-4o\"):
         \"\"\"
         Initialize OpenAI Brain with API configuration
-        
+
         Args:
             api_key: OpenAI API key (loaded from multiple sources if not provided)
             model: Model name to use (default: gpt-4o)
-            
+
         Raises:
             ValueError: If no valid API key found
         \"\"\"
@@ -53,7 +53,26 @@ class OpenAIChatBrain:
         self.api_key = self._load_api_key(api_key)
         self.client = OpenAI(api_key=self.api_key)
         self.model = model
-        self.available_functions = self._initialize_functions()
+        self.available_functions = {
+            \"save_file\": save_file,
+            \"read_file\": read_file,
+            \"execute_command\": execute_command,
+            \"gmail_search_emails\": gmail_search_emails,
+            \"gmail_fetch_emails\": fetch_gmail,
+            \"gmail_send_emails\": send_gmail,
+            \"calendar_list_events\": calendar_list_events,
+            \"calendar_create_event\": calendar_create_event,
+            \"calendar_search_events\": calendar_search_events,
+            \"calendar_delete_event\": calendar_delete_event,
+            \"reset_google_cred\": reset_google_cred,
+            \"take_screenshot\": take_screenshot,
+            \"move_mouse\": move_mouse,
+            \"click_mouse\": click_mouse,
+            \"drag_mouse\": drag_mouse,
+            \"type_text\": type_text,
+            \"press_key\": press_key,
+            \"hotkey\": hotkey,
+        }
 ```
 
 ### API Key Management
@@ -61,25 +80,18 @@ class OpenAIChatBrain:
 The OpenAI Brain implements a robust API key loading system with multiple fallback sources:
 
 ```python
-def _load_api_key(self, provided_key: Optional[str]) -> str:
-    \"\"\"Load API key from multiple sources with priority order\"\"\"
-    
-    # 1. Direct parameter (highest priority)
-    if provided_key:
-        return provided_key
-    
-    # 2. .env file
+# API key loading is handled directly in __init__ method:
+# Try to get API key from multiple sources
+self.api_key = api_key
+if not self.api_key:
+    # Try .env file
     env_vars = load_env_file()
-    env_key = env_vars.get(\"OPENAI_API_KEY\")
-    if env_key:
-        return env_key
-    
-    # 3. Environment variable
-    os_key = os.getenv(\"OPENAI_API_KEY\")
-    if os_key:
-        return os_key
-    
-    # 4. Fail with helpful error message
+    self.api_key = env_vars.get(\"OPENAI_API_KEY\")
+if not self.api_key:
+    # Try environment variable
+    self.api_key = os.getenv(\"OPENAI_API_KEY\")
+
+if not self.api_key:
     raise ValueError(
         \"OpenAI API key not provided. Set it in:\\n\"
         \"1. .env file: OPENAI_API_KEY=your-key\\n\"
@@ -98,7 +110,7 @@ One of the most complex aspects of the OpenAI Brain is converting between SOFIA'
 def convert_messages_to_openai_format(messages: List[Dict]) -> List[Dict]:
     \"\"\"
     Convert SOFIA messages to OpenAI API format
-    
+
     Handles:
     - Tool message orphan detection
     - Image URL formatting for vision API
@@ -107,7 +119,7 @@ def convert_messages_to_openai_format(messages: List[Dict]) -> List[Dict]:
     \"\"\"
     openai_messages = []
     tool_call_tracker = {}  # Track tool_call_ids for proper sequencing
-    
+
     for i, msg in enumerate(messages):
         if msg['role'] == 'tool':
             # Handle tool response messages
@@ -118,10 +130,10 @@ def convert_messages_to_openai_format(messages: List[Dict]) -> List[Dict]:
         else:
             # Handle regular messages (user, assistant, system)
             openai_msg = process_regular_message(msg)
-        
+
         if openai_msg:  # Some messages may be skipped
             openai_messages.append(openai_msg)
-    
+
     return openai_messages
 ```
 
@@ -131,7 +143,7 @@ def convert_messages_to_openai_format(messages: List[Dict]) -> List[Dict]:
 def process_tool_message(msg: Dict, tracker: Dict, messages: List, index: int) -> Optional[Dict]:
     \"\"\"Process tool response messages with orphan detection\"\"\"
     tool_name = msg.get('name', 'unknown')
-    
+
     # Check if this tool has a corresponding tool_call
     if tool_name in tracker:
         # Normal tool response
@@ -145,11 +157,11 @@ def process_tool_message(msg: Dict, tracker: Dict, messages: List, index: int) -
         if tool_name == 'take_screenshot':
             # Check if next message is assistant with images
             next_msg_has_images = (
-                index + 1 < len(messages) and 
-                messages[index + 1]['role'] == 'assistant' and 
+                index + 1 < len(messages) and
+                messages[index + 1]['role'] == 'assistant' and
                 'images' in messages[index + 1]
             )
-            
+
             if next_msg_has_images:
                 # Skip - will be handled by next message
                 return None
@@ -162,7 +174,7 @@ def process_tool_message(msg: Dict, tracker: Dict, messages: List, index: int) -
         else:
             # Convert other orphaned tools to assistant messages
             return {
-                \"role\": \"assistant\", 
+                \"role\": \"assistant\",
                 \"content\": f\"Tool {tool_name} result: {msg['content']}\"
             }
 ```
@@ -175,14 +187,14 @@ OpenAI's Vision API requires specific formatting for images:
 def process_image_message(msg: Dict) -> Dict:
     \"\"\"Process messages containing images for Vision API\"\"\"
     content_parts = []
-    
+
     # Add text content
     if msg.get('content'):
         content_parts.append({
             \"type\": \"text\",
             \"text\": msg['content']
         })
-    
+
     # Process images
     for image_path in msg.get('images', []):
         if os.path.exists(image_path):
@@ -190,7 +202,7 @@ def process_image_message(msg: Dict) -> Dict:
             if base64_image:
                 # Determine image format
                 image_format = get_image_format(image_path)
-                
+
                 content_parts.append({
                     \"type\": \"image_url\",
                     \"image_url\": {
@@ -198,13 +210,13 @@ def process_image_message(msg: Dict) -> Dict:
                         \"detail\": \"high\"  # High detail for better analysis
                     }
                 })
-    
+
     # OpenAI only allows images in user messages
     role = \"user\" if msg['role'] == 'assistant' else msg['role']
     if msg['role'] == 'assistant':
         # Add prefix to indicate this was originally an assistant message
         content_parts[0]['text'] = f\"[System analysis: {content_parts[0]['text']}]\"
-    
+
     return {
         \"role\": role,
         \"content\": content_parts
@@ -217,10 +229,10 @@ def process_image_message(msg: Dict) -> Dict:
 def encode_image_to_base64(image_path: str) -> Optional[str]:
     \"\"\"
     Encode image to base64 for OpenAI Vision API
-    
+
     Args:
         image_path: Path to image file
-        
+
     Returns:
         Base64 encoded string or None if error
     \"\"\"
@@ -251,7 +263,7 @@ def get_image_format(image_path: str) -> str:
 def convert_tools_to_openai_format(tools: List[Dict]) -> List[Dict]:
     \"\"\"Convert SOFIA tools to OpenAI function format\"\"\"
     openai_tools = []
-    
+
     for tool in tools:
         if tool.get('type') == 'function':
             func = tool.get('function', {})
@@ -264,7 +276,7 @@ def convert_tools_to_openai_format(tools: List[Dict]) -> List[Dict]:
                 }
             }
             openai_tools.append(openai_tool)
-    
+
     return openai_tools
 ```
 
@@ -273,28 +285,32 @@ def convert_tools_to_openai_format(tools: List[Dict]) -> List[Dict]:
 ```python
 def execute_tool_calls(self, tool_calls, messages) -> bool:
     \"\"\"
-    Execute OpenAI tool calls and add results to message history
-    
+    Execute OpenAI tool calls with performance optimization and error handling
+
     Args:
         tool_calls: List of tool call objects from OpenAI response
         messages: Message history to append results to
-        
+
     Returns:
         bool: True if any tools were executed successfully
     \"\"\"
     executed = False
-    
-    for tool_call in tool_calls:
+
+    for i, tool_call in enumerate(tool_calls):
+        # Add cooldown between tools (except for first tool)
+        if i > 0:
+            time.sleep(0.3)  # Reduced cooldown for better responsiveness
+
         tool_name = tool_call.function.name
         tool_call_id = tool_call.id
-        
+
         # Parse arguments
         try:
             args = json.loads(tool_call.function.arguments)
         except Exception as e:
             print(f\"Error parsing arguments: {e}\")
             args = {}
-        
+
         # Execute function
         func = self.available_functions.get(tool_name)
         if func:
@@ -303,20 +319,24 @@ def execute_tool_calls(self, tool_calls, messages) -> bool:
                 print(f\"Calling function: {tool_name}\")
                 print(\"Arguments:\", args)
                 print(\"Function output:\", output)
-                
-                # Add tool response with proper tool_call_id
+
+                # Add tool response with proper tool_call_id for OpenAI
                 messages.append({
                     \"role\": \"tool\",
                     \"content\": str(output),
                     \"tool_call_id\": tool_call_id,
-                    \"name\": tool_name
+                    \"name\": tool_name  # Keep for compatibility
                 })
                 executed = True
-                
-                # Handle special processing for screenshots
+
+                # Add brief delay after resource-intensive operations
+                if tool_name in [\"take_screenshot\", \"move_mouse\", \"click_mouse\", \"drag_mouse\"]:
+                    time.sleep(0.1)
+
+                # Handle screenshot processing with comprehensive error handling
                 if tool_name == \"take_screenshot\":
-                    self._process_screenshot_result(output, messages)
-                    
+                    self._process_screenshot_with_retry(output, messages)
+
             except Exception as e:
                 print(f\"Error calling function: {e}\")
                 messages.append({
@@ -333,36 +353,83 @@ def execute_tool_calls(self, tool_calls, messages) -> bool:
                 \"tool_call_id\": tool_call_id,
                 \"name\": tool_name
             })
-    
+
     return executed
 ```
 
 ### Screenshot Processing
 
 ```python
-def _process_screenshot_result(self, output: Dict, messages: List[Dict]):
-    \"\"\"Process screenshot results and add image analysis\"\"\"
+def _process_screenshot_with_retry(self, output: Dict, messages: List[Dict]):
+    \"\"\"Process screenshot results with comprehensive error handling and retry logic\"\"\"
     path = output.get(\"path\")
     if path and os.path.exists(path):
-        try:
-            print(\"Processing screenshot with OmniParser\")
-            from sofia.vision.omniparser import process_image
-            image_content = process_image(path)
-            
-            # Add assistant message with image and analysis
-            messages.append({
-                \"role\": \"assistant\",
-                \"content\": image_content,
-                \"images\": [path]
-            })
-        except Exception as e:
-            print(f\"Error processing screenshot: {e}\")
-            # Add simple message without detailed analysis
-            messages.append({
-                \"role\": \"assistant\",
-                \"content\": \"Screenshot taken successfully.\",
-                \"images\": [path]
-            })
+        # Add delay before processing to prevent resource overload
+        time.sleep(1.0)
+
+        # Retry logic for OmniParser processing
+        max_retries = 2
+        retry_delay = 2.0
+
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    print(f\"OmniParser retry attempt {attempt}/{max_retries}\")
+                    time.sleep(retry_delay)
+                else:
+                    print(\"processing images with OmniParser\")
+
+                # Force cleanup before processing
+                import gc
+                gc.collect()
+
+                # Clear CUDA cache if available
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except:
+                    pass
+
+                # Process with OmniParser
+                from sofia.vision.omniparser import process_image
+                image_content = process_image(path)
+                messages.append({
+                    \"role\": \"assistant\",
+                    \"content\": image_content,
+                    \"images\": [path]
+                })
+
+                # Force cleanup after successful processing
+                gc.collect()
+                break  # Success - exit retry loop
+
+            except Exception as omni_error:
+                print(f\"OmniParser processing failed (attempt {attempt + 1}): {omni_error}\")
+
+                if attempt == max_retries:
+                    # Final attempt failed - provide helpful error message
+                    error_message = (
+                        \"Screenshot captured, but visual analysis failed due to resource overload. \"
+                        \"The system's vision processing models (GPU/CPU) are temporarily overwhelmed. \"
+                        \"Please wait 5-10 seconds before taking another screenshot to allow the system to recover. \"
+                        \"The screenshot image is still available for viewing.\"
+                    )
+                    messages.append({
+                        \"role\": \"assistant\",
+                        \"content\": error_message,
+                        \"images\": [path]
+                    })
+
+                # Force cleanup on error
+                import gc
+                gc.collect()
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except:
+                    pass
 ```
 
 ## Streaming Implementation
@@ -373,22 +440,22 @@ def _process_screenshot_result(self, output: Dict, messages: List[Dict]):
 def continuous_chat(self, messages: List[Dict], tools: List[Dict], stream: bool = False):
     \"\"\"
     Handle a single chat interaction with streaming support
-    
+
     Args:
         messages: Conversation history
         tools: Available tool definitions
         stream: Enable streaming responses
-        
+
     Returns:
         Tuple[str, str]: (response_text, user_input)
     \"\"\"
     user_input = input(\"User: \")
     messages.append({\"role\": \"user\", \"content\": user_input})
-    
+
     # Convert to OpenAI format
     openai_messages = convert_messages_to_openai_format(messages)
     openai_tools = convert_tools_to_openai_format(tools)
-    
+
     # Make API call
     response = self.client.chat.completions.create(
         model=self.model,
@@ -396,7 +463,7 @@ def continuous_chat(self, messages: List[Dict], tools: List[Dict], stream: bool 
         tools=openai_tools if openai_tools else None,
         stream=stream
     )
-    
+
     if stream:
         return self._handle_streaming_response(response, messages, tools)
     else:
@@ -410,15 +477,15 @@ def _handle_streaming_response(self, response, messages: List[Dict], tools: List
     \"\"\"Process streaming response with tool call accumulation\"\"\"
     full_content = \"\"
     tool_calls = []
-    
+
     for chunk in response:
         delta = chunk.choices[0].delta
-        
+
         # Accumulate content
         if delta.content:
             full_content += delta.content
             print(delta.content, end='', flush=True)
-        
+
         # Accumulate tool calls
         if delta.tool_calls:
             for tc in delta.tool_calls:
@@ -429,7 +496,7 @@ def _handle_streaming_response(self, response, messages: List[Dict], tools: List
                         \"type\": \"function\",
                         \"function\": {\"name\": None, \"arguments\": \"\"}
                     })
-                
+
                 # Update tool call data
                 if tc.id:
                     tool_calls[tc.index][\"id\"] = tc.id
@@ -438,9 +505,9 @@ def _handle_streaming_response(self, response, messages: List[Dict], tools: List
                         tool_calls[tc.index][\"function\"][\"name\"] = tc.function.name
                     if tc.function.arguments:
                         tool_calls[tc.index][\"function\"][\"arguments\"] += tc.function.arguments
-    
+
     print()  # New line after streaming
-    
+
     # Process tool calls if any
     if tool_calls:
         return self._execute_tools_and_continue(full_content, tool_calls, messages, tools)
@@ -452,17 +519,17 @@ def _handle_streaming_response(self, response, messages: List[Dict], tools: List
 ### Tool Execution and Continuation
 
 ```python
-def _execute_tools_and_continue(self, content: str, tool_calls: List[Dict], 
+def _execute_tools_and_continue(self, content: str, tool_calls: List[Dict],
                                messages: List[Dict], tools: List[Dict]):
     \"\"\"Execute tools and get follow-up response\"\"\"
-    
+
     # Add assistant message with tool calls
     messages.append({
         \"role\": \"assistant\",
         \"content\": content or \"\",
         \"tool_calls\": tool_calls
     })
-    
+
     # Convert tool calls to objects and execute
     tool_objects = []
     for tc in tool_calls:
@@ -474,10 +541,10 @@ def _execute_tools_and_continue(self, content: str, tool_calls: List[Dict],
             })()
         })()
         tool_objects.append(tool_obj)
-    
+
     # Execute tools
     self.execute_tool_calls(tool_objects, messages)
-    
+
     # Get final response after tool execution
     final_response_text, _ = self.continuous_chat_no_input(messages, tools, stream=True)
     return final_response_text, None
@@ -491,7 +558,7 @@ def _execute_tools_and_continue(self, content: str, tool_calls: List[Dict],
 def _handle_api_error(self, error: Exception) -> str:
     \"\"\"Handle OpenAI API errors with helpful messages\"\"\"
     error_str = str(error)
-    
+
     if \"Invalid parameter: messages with role 'tool'\" in error_str:
         return \"Error: Tool message format issue. Please check tool call sequence.\"
     elif \"Image URLs are only allowed for messages with role 'user'\" in error_str:
@@ -511,14 +578,14 @@ def _make_api_call_with_retry(self, **kwargs) -> Any:
     \"\"\"Make API call with exponential backoff retry\"\"\"
     max_retries = 3
     base_delay = 1
-    
+
     for attempt in range(max_retries):
         try:
             return self.client.chat.completions.create(**kwargs)
         except Exception as e:
             if attempt == max_retries - 1:
                 raise e
-            
+
             # Exponential backoff
             delay = base_delay * (2 ** attempt)
             print(f\"API call failed (attempt {attempt + 1}), retrying in {delay}s...\")
@@ -550,7 +617,7 @@ if isinstance(brain, OpenAIChatBrain):
     # Convert formats
     openai_messages = convert_messages_to_openai_format(messages)
     openai_tools = convert_tools_to_openai_format(tools)
-    
+
     # Stream response
     stream = brain.client.chat.completions.create(
         model=brain.model,
@@ -558,7 +625,7 @@ if isinstance(brain, OpenAIChatBrain):
         tools=openai_tools,
         stream=True
     )
-    
+
     for chunk in stream:
         # Process streaming chunks
         pass
@@ -578,7 +645,7 @@ class AnalysisThread(QThread):
                 tools=openai_tools,
                 stream=True
             )
-            
+
             for chunk in response:
                 if chunk.choices[0].delta.content:
                     self.streaming_chunk.emit(chunk.choices[0].delta.content)
@@ -599,20 +666,6 @@ def _cleanup_old_messages(self, messages: List[Dict], max_length: int = 50):
     return messages
 ```
 
-### Token Optimization
-
-```python
-def _estimate_tokens(self, messages: List[Dict]) -> int:
-    \"\"\"Rough token estimation for cost management\"\"\"
-    total_chars = sum(len(str(msg.get('content', ''))) for msg in messages)
-    return total_chars // 4  # Rough approximation
-
-def _should_compress_history(self, messages: List[Dict]) -> bool:
-    \"\"\"Determine if message history should be compressed\"\"\"
-    estimated_tokens = self._estimate_tokens(messages)
-    return estimated_tokens > 8000  # Stay well under context limits
-```
-
 ## Testing
 
 ### Unit Tests
@@ -624,7 +677,7 @@ def test_message_conversion():
         {\"role\": \"user\", \"content\": \"Hello\"},
         {\"role\": \"assistant\", \"content\": \"Hi there!\"}
     ]
-    
+
     openai_messages = convert_messages_to_openai_format(sofia_messages)
     assert len(openai_messages) == 2
     assert openai_messages[0]['role'] == 'user'
@@ -638,25 +691,10 @@ def test_tool_conversion():
             \"description\": \"Test function\"
         }
     }]
-    
+
     openai_tools = convert_tools_to_openai_format(sofia_tools)
     assert len(openai_tools) == 1
     assert openai_tools[0]['function']['name'] == 'test_tool'
-```
-
-### Integration Tests
-
-```python
-def test_complete_chat_flow():
-    \"\"\"Test complete chat flow with tool execution\"\"\"
-    brain = OpenAIChatBrain(api_key=\"test_key\")
-    messages = [{\"role\": \"user\", \"content\": \"Take a screenshot\"}]
-    tools = [screenshot_tool_definition]
-    
-    # Mock API response
-    with mock.patch.object(brain.client.chat.completions, 'create'):
-        response = brain.continuous_chat(messages, tools)
-        assert response is not None
 ```
 
 The OpenAI Brain provides a robust, feature-complete interface to OpenAI's powerful AI models while maintaining seamless integration with SOFIA's tool system and user interfaces.
